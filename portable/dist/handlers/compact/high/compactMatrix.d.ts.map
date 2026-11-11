@@ -1,0 +1,1 @@
+{"version":3,"file":"compactMatrix.d.ts","sourceRoot":"","sources":["../../../../src/handlers/compact/high/compactMatrix.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,iBAAiB,EAAE,MAAM,sBAAsB,CAAC;AAE9D,MAAM,MAAM,oBAAoB,GAAG,QAAQ,GAAG,KAAK,GAAG,QAAQ,GAAG,QAAQ,CAAC;AAE1E,eAAO,MAAM,mBAAmB,EAAE,MAAM,CACtC,iBAAiB,EACjB,SAAS,oBAAoB,EAAE,CA8BhC,CAAC"}

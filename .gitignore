@@ -1,0 +1,28 @@
+# SAP 连接配置：含明文凭据，绝不入库
+portable/env/*.env
+!portable/env/*.env.example
+**/*.env
+!**/*.env.example
+
+# 依赖与构建产物
+node_modules/
+*.log
+npm-debug.log*
+
+# 本机 / 编辑器噪声
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# 备份与临时文件
+backup/
+*.bak
+*.bak.*
+*.tmp
+~$*
+
+# 现场产物（本地使用，不入库）
+reports/
+tmp/

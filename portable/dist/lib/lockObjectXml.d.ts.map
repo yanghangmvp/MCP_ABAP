@@ -1,0 +1,1 @@
+{"version":3,"file":"lockObjectXml.d.ts","sourceRoot":"","sources":["../../src/lib/lockObjectXml.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,EAAE,MAAM,EAAE,MAAM,gBAAgB,CAAC;AAExC,OAAO,EAAE,MAAM,EAAE,CAAC;AAElB,MAAM,WAAW,gBAAgB;IAC/B,QAAQ,EAAE,OAAO,CAAC;IAClB,YAAY,EAAE,MAAM,CAAC;IACrB,QAAQ,EAAE,MAAM,CAAC;CAClB;AAED,wBAAgB,gBAAgB,CAAC,KAAK,EAAE,gBAAgB,GAAG,MAAM,CAWhE"}

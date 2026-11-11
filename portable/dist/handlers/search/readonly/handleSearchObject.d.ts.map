@@ -1,0 +1,1 @@
+{"version":3,"file":"handleSearchObject.d.ts","sourceRoot":"","sources":["../../../../src/handlers/search/readonly/handleSearchObject.ts"],"names":[],"mappings":"AAGA,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,kCAAkC,CAAC;AAGvE,eAAO,MAAM,eAAe;;;;;;;;;;;;;;;;;;;;;;;CA4BlB,CAAC;AAoBX,wBAAsB,kBAAkB,CAAC,OAAO,EAAE,cAAc,EAAE,IAAI,EAAE,GAAG;aAf7D,OAAO;aAAW,GAAG,EAAE;GAoHpC"}

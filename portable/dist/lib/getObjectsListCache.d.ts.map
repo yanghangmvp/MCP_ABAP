@@ -1,0 +1,1 @@
+{"version":3,"file":"getObjectsListCache.d.ts","sourceRoot":"","sources":["../../src/lib/getObjectsListCache.ts"],"names":[],"mappings":"AAEA,KAAK,oBAAoB,GAAG,GAAG,GAAG,IAAI,CAAC;AAEvC,cAAM,gBAAgB;IACpB,OAAO,CAAC,KAAK,CAA8B;IAE3C,QAAQ,CAAC,IAAI,EAAE,GAAG;IAIlB,QAAQ,IAAI,oBAAoB;IAIhC,UAAU;CAGX;AAED,eAAO,MAAM,gBAAgB,kBAAyB,CAAC"}

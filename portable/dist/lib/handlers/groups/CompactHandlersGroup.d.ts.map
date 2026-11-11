@@ -1,0 +1,1 @@
+{"version":3,"file":"CompactHandlersGroup.d.ts","sourceRoot":"","sources":["../../../../src/lib/handlers/groups/CompactHandlersGroup.ts"],"names":[],"mappings":"AAwFA,OAAO,EAAE,gBAAgB,EAAE,MAAM,6BAA6B,CAAC;AAC/D,OAAO,KAAK,EAAE,YAAY,EAAE,MAAM,kBAAkB,CAAC;AAErD;;;GAGG;AACH,qBAAa,oBAAqB,SAAQ,gBAAgB;IACxD,SAAS,CAAC,SAAS,SAAqB;IAExC,WAAW,IAAI,YAAY,EAAE;CAkG9B"}

@@ -1,0 +1,122 @@
+"use strict";
+/**
+ * CheckProgram Handler - Syntax check for ABAP Program
+ *
+ * Uses AdtClient.checkProgram from @mcp-abap-adt/adt-clients.
+ * Low-level handler: single method call.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TOOL_DEFINITION = void 0;
+exports.handleCheckProgram = handleCheckProgram;
+const adtObjectOps_1 = require("../../../lib/adtObjectOps");
+const clients_1 = require("../../../lib/clients");
+const utils_1 = require("../../../lib/utils");
+exports.TOOL_DEFINITION = {
+    name: 'CheckProgramLow',
+    available_in: ['onprem', 'legacy'],
+    description: '[low-level] Perform syntax check on an ABAP program. Returns syntax errors, warnings, and messages. Can use session_id and session_state from GetSession to maintain the same session.',
+    inputSchema: {
+        type: 'object',
+        properties: {
+            program_name: {
+                type: 'string',
+                description: 'Program name (e.g., Z_MY_PROGRAM).',
+            },
+            session_id: {
+                type: 'string',
+                description: 'Session ID from GetSession. If not provided, a new session will be created.',
+            },
+            session_state: {
+                type: 'object',
+                description: 'Session state from GetSession (cookies, csrf_token, cookie_store). Required if session_id is provided.',
+                properties: {
+                    cookies: { type: 'string' },
+                    csrf_token: { type: 'string' },
+                    cookie_store: { type: 'object' },
+                },
+            },
+        },
+        required: ['program_name'],
+    },
+};
+/**
+ * Main handler for CheckProgram MCP tool
+ *
+ * Uses AdtClient.checkProgram - low-level single method call
+ */
+async function handleCheckProgram(context, args) {
+    const { connection, logger } = context;
+    try {
+        const { program_name, session_id, session_state } = args;
+        // Validation
+        if (!program_name) {
+            return (0, utils_1.return_error)(new Error('program_name is required'));
+        }
+        // Check if cloud - programs are not available on cloud systems
+        if ((0, utils_1.isCloudConnection)()) {
+            return (0, utils_1.return_error)(new Error('Programs are not available on cloud systems (ABAP Cloud). This operation is only supported on on-premise systems.'));
+        }
+        (0, clients_1.createAdtClient)(connection, logger); // wrap connection (sap-language pinning)
+        // Restore session state if provided
+        if (session_id && session_state) {
+            await (0, utils_1.restoreSessionInConnection)(connection, session_id, session_state);
+        }
+        const programName = program_name.toUpperCase();
+        logger?.info(`Starting program check: ${programName}`);
+        try {
+            // Our own checkrun + formatter: see checkObjectAndReport for the three
+            // separate ways the dependency's per-type check() gets this wrong.
+            const report = await (0, adtObjectOps_1.checkObjectAndReport)(connection, {
+                objectUri: `/sap/bc/adt/programs/programs/${(0, utils_1.encodeSapObjectName)(programName).toLowerCase()}`,
+                subject: `program ${programName}`,
+            });
+            const checkResult = report.check_result;
+            // Get updated session state after check
+            logger?.info(`✅ CheckProgram completed: ${programName}`);
+            logger?.debug(`Status: ${checkResult.status} | Errors: ${checkResult.errors.length}, Warnings: ${checkResult.warnings.length}`);
+            return (0, utils_1.return_response)({
+                data: JSON.stringify({
+                    success: report.success,
+                    program_name: programName,
+                    check_result: checkResult,
+                    session_id: session_id || null,
+                    session_state: null, // Session state management is now handled by auth-broker,
+                    message: report.message,
+                    findings: report.findings,
+                }, null, 2),
+            });
+        }
+        catch (error) {
+            logger?.error(`Error checking program ${programName}: ${error?.message || error}`);
+            // Parse error message
+            let errorMessage = `Failed to check program: ${error.message || String(error)}`;
+            if (error.response?.status === 404) {
+                errorMessage = `Program ${programName} not found.`;
+            }
+            else if (error.response?.data &&
+                typeof error.response.data === 'string') {
+                try {
+                    const { XMLParser } = require('fast-xml-parser');
+                    const parser = new XMLParser({
+                        ignoreAttributes: false,
+                        attributeNamePrefix: '@_',
+                    });
+                    const errorData = parser.parse(error.response.data);
+                    const errorMsg = errorData['exc:exception']?.message?.['#text'] ||
+                        errorData['exc:exception']?.message;
+                    if (errorMsg) {
+                        errorMessage = `SAP Error: ${errorMsg}`;
+                    }
+                }
+                catch (_parseError) {
+                    // Ignore parse errors
+                }
+            }
+            return (0, utils_1.return_error)(new Error(errorMessage));
+        }
+    }
+    catch (error) {
+        return (0, utils_1.return_error)(error);
+    }
+}
+//# sourceMappingURL=handleCheckProgram.js.map

@@ -1,0 +1,1 @@
+{"version":3,"file":"IAuthBrokerFactory.d.ts","sourceRoot":"","sources":["../../../src/lib/auth/IAuthBrokerFactory.ts"],"names":[],"mappings":"AAAA;;;GAGG;AAEH,OAAO,KAAK,EAAE,UAAU,EAAE,MAAM,2BAA2B,CAAC;AAE5D,MAAM,WAAW,kBAAkB;IACjC;;;OAGG;IACH,uBAAuB,IAAI,OAAO,CAAC,IAAI,CAAC,CAAC;IAEzC;;;;OAIG;IACH,qBAAqB,CAAC,WAAW,CAAC,EAAE,MAAM,GAAG,OAAO,CAAC,UAAU,GAAG,SAAS,CAAC,CAAC;CAC9E"}
