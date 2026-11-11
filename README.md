@@ -13,6 +13,7 @@
 | 自检 | 验证 server 启动 / 工具数量 / 到 SAP 的端到端 SQL | `portable/verify.mjs` |
 | 作业脚本 | 13 个 ADT 直连脚本：回读源码、推源码、推文本元素、激活、查 dump、删探针 | `scripts/` |
 | 经验文档 | 写入铁律、踩坑清单、脚本手册、交付检查清单 | `docs/` |
+| 技能包 | 12 个可自动加载的 Agent Skill：项目总纲模板、120 条踩坑库、报表推送、DDIC、SD BAPI、CUA、TCODE、接口 JSON 等 | `skills/` |
 
 **适用范围**：On-Premise ECC / S/4HANA + Basic Auth + ADT（S_ADT_RES 权限）+ Node.js >= 22；客户端以 WorkBuddy 为主，stdio 配置同样适用于其他 MCP 客户端。
 
@@ -123,6 +124,33 @@ node scripts/adt.js dumps
 
 ---
 
+## 技能包（Skills）— 把「怎么做」交给 AI 自动加载
+
+`docs/` 是给人读的，`skills/` 是给 AI 读的：每个目录一个 `SKILL.md`，把「遇到 X 就按 Y 顺序做」写成可自动匹配加载的技能，不需要每次重新解释上下文。
+
+```bash
+cp -r skills/sap-* ~/.workbuddy/skills/     # 装进 WorkBuddy
+```
+
+| 技能 | 解决什么问题 |
+|---|---|
+| `sap-abap-project-ops` | ★ 项目作业总纲**模板**：集团切换、速查命令、六铁律、项目约定、接口范式、对象清单骨架 |
+| `sap-abap-pitfalls` | ★ 约 120 条「现象 → 根因 → 解法」+ 症状速查表 + 五阶段开工 checklist |
+| `sap-abap-prog-push-run` | 报表推送 / 激活 / 无头运行 / 测试报告；500 根因定位 |
+| `sap-ddic-object-ops` | 域 / 数据元素 / 表 / 结构 / 表类型的建与改 |
+| `sap-json-interface-mapping` | 接口报文键名命中契约、`compress` 丢空值、三形态探针 |
+| `sap-sd-sales-order-bapi` | SD 订单 BAPI：增强字段、参考单据三件套、退货单、数量双通道 |
+| `sap-bdc-to-bapi-migration` | BDC 批导改标准函数 / BAPI 的五步法 |
+| `sap-cua-gui-status-functions` | 批量登记 GUI 状态功能码，绕开 SE41 |
+| `sap-tcode-create` | 批量建事务码 |
+| `sap-dump-to-excel-cell` | 从 short dump 反查 Excel 出错单元格 |
+| `sap-export-column-mapping` | 导出列 ↔ 源码字段映射（数据对撞，不按标签猜） |
+| `sap-s4hana-cloud-adt-connect` | ADT 接 S/4HANA Cloud 公有云的认证链路与写对象坑 |
+
+技能原文写于真实客户项目，发布版已做**客户名 / 内网地址 / 账号 / 传输号 / 人名 / 本地路径**的泛化替换，技术判断与结构未改。对照表见 [skills/README.md](skills/README.md)。
+
+---
+
 ## 安全与合规
 
 - `portable/env/*.env` 含明文凭据，**已在 `.gitignore` 中排除**，权限 600；不要提交、不要贴进 issue、不要写进交付物。
@@ -142,5 +170,6 @@ MCP_ABAP/
 ├── portable/                 便携包可读源码（bin / dist / install / verify / env 模板 / 文档）
 ├── releases/                 离线整包 zip（含 node_modules）
 ├── scripts/                  13 个 ADT 直连作业脚本
+├── skills/                   12 个可自动加载的 Agent Skill（含 120 条踩坑库）
 └── docs/                     部署、铁律、踩坑、脚本、交付流程
 ```
