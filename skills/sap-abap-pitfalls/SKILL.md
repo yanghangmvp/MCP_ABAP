@@ -279,4 +279,4 @@ agent_created: true
 | `sap-tcode-create` | 建事务码 |
 | `sap-dump-to-excel-cell` | 从短转储反查 Excel 出错单元格 |
 
-> 项目侧约定（强制 ZH、瘦函数体+FORM、命名规范、交付四步）不在本技能，见工作区 `README.md` 与 `开发模板/`。
+> 项目侧约定（强制 ZH、瘦函数体+FORM、命名规范、交付四步）不在本技能，见你自己项目的作业总纲（写法参照仓库 `examples/project-ops-template.md`）。
