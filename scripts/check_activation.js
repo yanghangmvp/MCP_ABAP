@@ -80,7 +80,7 @@ const sig = (data) => {
   for (const e of entries) {
     const ref = /<ioc:ref([^>]*)\/>/.exec(e)?.[1] || '';
     const g = (k) => new RegExp(`adtcore:${k}="([^"]*)"`).exec(ref)?.[1] || '';
-    const corr = /transportrequests\/(ED2K\d+)/.exec(e)?.[1] || '-';
+    const corr = /transportrequests\/(DEVK\d+)/.exec(e)?.[1] || '-';
     console.log(`  ${g('type').padEnd(9)} ${g('name').padEnd(12)} corr=${corr.padEnd(12)} ${g('uri')}`);
   }
 

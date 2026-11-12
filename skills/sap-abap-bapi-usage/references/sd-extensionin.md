@@ -157,7 +157,7 @@ CALL FUNCTION 'SD_SALESDOCUMENT_CREATE'          " 或 _CHANGE
 3. **确认长度**：`DESCRIBE FIELD <值结构> LENGTH n.` —— `n > 240` 就必须按 240 分块填 `VALUEPART1~4`（§4.3）。
 4. **确认标识字段数据元素**：查 `DD03L.ROLLNAME`，`*KOZX` 的 Z 字段必须全部是 `CHAR1`（§4.5）。可用
    ```bash
-   node scripts/work/adt.js query "SELECT * FROM DD03L WHERE TABNAME = 'ZSVBAPKOZX'"
+   node scripts/adt.js query "SELECT * FROM DD03L WHERE TABNAME = 'ZSVBAPKOZX'"
    ```
 5. **构造「同时传标准字段 + 增强字段」的用例**：若两者同时落库而"只传增强字段"失败，说明是两个独立问题；只测一种很容易误判。`ZBPM_ISP016` 的用例㉑-2 就是为此设的。
 

@@ -1,6 +1,6 @@
 ---
 name: sap-abap-bapi-usage
-description: BAPI / 标准函数（FM）的**索引入口**（跨项目通用）。一个 BAPI 一个文件，放在 references/ 下，本 SKILL.md 只做三件事：告诉你该读哪个文件、告诉你报错该查哪、告诉你新 BAPI 怎么加。现有分册覆盖：`BAPI_ACC_DOCUMENT_POST`（过账·双币·BSEG 999 行）、`BAPI_ACC_DOCUMENT_REV_POST`（冲销）、`FI_DOCUMENT_CHANGE`（改已过账）、`POSTING_INTERFACE_*`（票据 UMSKZ）、`BAPI_PRODORD_COMPLETE_TECH`（TECO）、取消 TECO（只能 BDC CO02）、`BAPI_PRODORD_SETUSERSTATUS`（用户状态）、`SD_SALESDOCUMENT_CREATE` / `_CHANGE`（SD 订单创建·变更）、`EXTENSIONIN`（增强字段承载链）、`BAPISCHDL` + `TVEPZ`（计划行与数量双通道）、`BAPISDTEXT`（长文本）、参考单据与退货单、BDC 兜底；通用三册：调用规范与参数四条硬约束、16 条静默失效清单、语言与数据格式。当要新建或改造任何 BAPI / 标准函数 / 批输入调用，或排查「返回 S 但数据没变 / 创建能写修改写不进 / 增强字段静默丢失 / 数量或金额为 0 / 报错文案与真因无关 / 调用后没提交 / 英文会话 Missing text / 双币不一致 / 时间戳变 00000000」时加载本技能，先读本文件定位文件，再读 references 下对应那份。
+description: BAPI / 标准函数（FM）的索引入口（跨项目通用）。一个 BAPI 一个文件放 references/，本 SKILL.md 只做三件事：该读哪个文件、报错该查哪、新 BAPI 怎么加。覆盖 FI 过账/冲销/改已过账/票据、PP 技术完成与用户状态、SD 订单创建与变更/增强字段 EXTENSIONIN/计划行数量/长文本/参考单据与退货单、BDC 兜底，另有三册通用规则（调用规范与参数四条硬约束、16 条静默失效清单、语言与数据格式）。当要新建或改造任何 BAPI / 标准函数 / 批输入调用，或排查「返回 S 但数据没变 / 创建能写修改写不进 / 增强字段静默丢失 / 数量或金额为 0 / 报错文案与真因无关 / 调用后没提交 / 英文会话 Missing text / 双币不一致 / 时间戳变 00000000」时加载，先读本文件定位，再读 references 对应那份。
 agent_created: true
 ---
 

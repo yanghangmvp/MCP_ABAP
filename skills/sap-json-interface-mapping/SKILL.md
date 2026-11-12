@@ -6,7 +6,7 @@ agent_created: true
 
 # ABAP 接口 JSON 报文字段名与空值控制（/ui2/cl_json）
 
-适用项目：示例客户 SAP ERP（`~/ABAP-AI`，系统 DEV）。参照实现：`ZBPM_ISC012`（函数组 `ZFG_BPM012`）、探针 `scripts/work/ZTEST_ISC012_JSON.abap`。
+适用项目：示例客户 SAP ERP（`~/ABAP-AI`，系统 DEV）。参照实现：`ZBPM_ISC012`（函数组 `ZFG_BPM012`）、探针 `scripts/ZTEST_ISC012_JSON.abap`。
 
 ## 1. 结论先行：`pretty_name` 解决不了大小写，必须用 `name_mappings`
 
@@ -99,7 +99,7 @@ TYPES: name_mappings TYPE HASHED TABLE OF name_mapping WITH UNIQUE KEY abap.
 # 结构改名走 UpdateStructure（UpdateTable 对 INTTAB 回 "PUT not supported"）
 # 步骤：lock → check_new_code → update → unlock → check_inactive → activate
 echo '{"structure_name":"ZBPM_ISC012_HEAD","ddl_code":"<完整 DDL>","transport_request":"DEVK900006","activate":true}' > /tmp/args.json
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js UpdateStructure @/tmp/args.json
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/call-adt-tool.js UpdateStructure @/tmp/args.json
 ```
 
 改完必须同步调用方程序里的字段引用（本例 `ZFID004` 的 `ls_in-kprq` → `ls_in-kprq_h`），
@@ -111,7 +111,7 @@ SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js UpdateStructure @/tm
 ## 6. 验证套路：`$TMP` 三形态探针（不要凭源码推断）
 
 `format_name` 是类 include 里的宏，ADT 读 `GetClass` 拿不到（`GetIncludesList` 也常回 "No includes found"）。
-**别在源码上考古，直接跑探针**。范式 `scripts/work/ZTEST_ISC012_JSON.abap`：
+**别在源码上考古，直接跑探针**。范式 `scripts/ZTEST_ISC012_JSON.abap`：
 
 1. **三形态对照**（同一份样例数据）：
    - `[1]` 无映射 + `compress='X'`（基线，证明"不改会错"）
@@ -139,7 +139,7 @@ SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js UpdateStructure @/tm
 
 ```bash
 # 1) 回读 SAP 端函数源码
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/get_source.js FM ZBPM_ISC012 ZFG_BPM012 --out=/tmp/after.abap
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/get_source.js FM ZBPM_ISC012 ZFG_BPM012 --out=/tmp/after.abap
 # 2) 提取两侧 VALUE #( ... ) 里的 ( abap = ... json = ... ) 对，做差集
 #    见本次实现：Node 正则 /abap\s*=\s*'([^']+)'\s+json\s*=\s*'([^']*)'/g
 ```
@@ -150,12 +150,12 @@ SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/get_source.js FM ZBPM_ISC012 ZFG
 ## 8. 交付检查清单
 
 ```bash
-SAP_ENV_FILE=$PWD/env/dev.env CORR_NR=DEVK900006 TARGET_GROUP=ZFG_BPM012 TARGET_FM=ZBPM_ISC012 \
-  SRC_FILE=$PWD/scripts/work/ZBPM_ISC012.abap node scripts/work/push_fm_source.js
-SAP_ENV_FILE=$PWD/env/dev.env CORR_NR=DEVK900006 PKG=ZFICO SRC_FILE=$PWD/scripts/work/ZFID004.abap \
-  node scripts/work/push_prog_source.js
+SAP_ENV_FILE=$PWD/portable/env/dev.env CORR_NR=DEVK900006 TARGET_GROUP=ZFG_BPM012 TARGET_FM=ZBPM_ISC012 \
+  SRC_FILE=$PWD/scripts/ZBPM_ISC012.abap node scripts/push_fm_source.js
+SAP_ENV_FILE=$PWD/portable/env/dev.env CORR_NR=DEVK900006 PKG=ZFICO SRC_FILE=$PWD/scripts/ZFID004.abap \
+  node scripts/push_prog_source.js
 echo '{"function_group_name":"ZFG_BPM012","function_module_name":"ZBPM_ISC012"}' > /tmp/fm.json
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js CheckFunctionModule @/tmp/fm.json
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/call-adt-tool.js CheckFunctionModule @/tmp/fm.json
 ```
 
 - [ ] 映射表：请求/返回分开；全大写字段也显式登记；无重复 `abap` 键

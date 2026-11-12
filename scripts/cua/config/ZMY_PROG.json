@@ -1,0 +1,30 @@
+{
+  "prog": "ZMY_PROG",
+  "baseline": "ZMY_PROGA",
+  "pfnoStart": 13,
+  "pfnoPool": [
+    13,
+    14,
+    16,
+    17,
+    20
+  ],
+  "buttons": [
+    {
+      "code": "ZLOAD",
+      "text": "导入",
+      "iconId": "@5Y@",
+      "iconName": "ICON_RELEASE",
+      "iconText": "导入",
+      "infoText": "示例：点此执行主流程"
+    },
+    {
+      "code": "ZTEST",
+      "text": "模拟导入",
+      "iconId": "@8Z@",
+      "iconName": "ICON_SIMULATE",
+      "iconText": "模拟导入",
+      "infoText": "只做校验不落库，正式导入前先跑一遍看报错"
+    }
+  ]
+}

@@ -118,8 +118,8 @@ ENDIF.
 - **环境**：集团 300 才有销售订单主数据（客户销售视图、物料销售视图、定价过程）。集团 100 无 `VBAK` 数据。
 - **运行命令**：
   ```bash
-  SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 SAP_LANGUAGE_OVERRIDE=zh \
-    node scripts/work/adt.js run ZTEST_ISP016_E2E2
+  SAP_ENV_FILE=$PWD/portable/env/dev.env SAP_CLIENT_OVERRIDE=300 SAP_LANGUAGE_OVERRIDE=zh \
+    node scripts/adt.js run ZTEST_ISP016_E2E2
   ```
 - **落库断言用唯一标记**：把 `'E16C' + sy-datum + sy-uzeit`（≤20 字符）写进 `VBAK-ZBPMNO`，
   然后 `SELECT vbeln FROM vbak WHERE zbpmno = @lv_mark` 精确取回本次生成的订单号，**避免误命中历史数据**。

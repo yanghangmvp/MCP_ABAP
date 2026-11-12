@@ -1,8 +1,8 @@
-\---  
-name: sap-cua-gui-status-functions  
-description: 用 ABAP 宿主 API（RS_CUA_INTERNAL_FETCH / WRITE / GENERATE）批量登记 SAP GUI 状态（CUA）的自定义功能码，绕开 SE41 人工操作。\*\*标准入口是 \`scripts/work/gen_cua.js\`（配置驱动：按程序一份 JSON 定义按钮，pfno/but_no 自动挑号、重跑幂等、图标配对校验、写回后回读+RS_CUA_GET_FUNCTIONS 双复核）\*\*。当需要给 REPORT 程序的 STANDARD 状态加工具栏按钮功能码、遇到「ADT 没有 GUI 状态资源」「SE41 只能人工」「按钮点了但不显示」这类判断时加载。含登记点（set/fun/but/pfk 四张表）、基线整份写入解法、GENERATE 必报 rc=3/EC801 的环境固有现象、CUA 随 R3TR PROG 传输的实证、以及 EUDB 跨集团落库等事实。  
-agent_created: true  
-\---
+---
+name: sap-cua-gui-status-functions
+description: 用 ABAP 宿主 API（RS_CUA_INTERNAL_FETCH / WRITE / GENERATE）批量登记 SAP GUI 状态（CUA）的自定义功能码，绕开 SE41 人工操作。**标准入口是 `scripts/gen_cua.js`（配置驱动：按程序一份 JSON 定义按钮，pfno/but_no 自动挑号、重跑幂等、图标配对校验、写回后回读+RS_CUA_GET_FUNCTIONS 双复核）**。当需要给 REPORT 程序的 STANDARD 状态加工具栏按钮功能码、遇到「ADT 没有 GUI 状态资源」「SE41 只能人工」「按钮点了但不显示」这类判断时加载。含登记点（set/fun/but/pfk 四张表）、基线整份写入解法、GENERATE 必报 rc=3/EC801 的环境固有现象、CUA 随 R3TR PROG 传输的实证、以及 EUDB 跨集团落库等事实。
+agent_created: true
+---
 
 # SAP GUI 状态（CUA）功能码：自动化登记
 
@@ -16,17 +16,17 @@ agent_created: true
 
 | 文件                                        | 作用                                                                                                                               |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `scripts/work/gen_cua.js`                 | **唯一入口**：读配置 → 注入模板 → 推送 → 运行 → 校验。任一环节不过就 `exit 1`                                                                              |
-| `scripts/work/cua/ZCUA_APPLY.tpl.abap`    | ABAP 模板，含 `*{{TARGET}}` / `{{DO_WRITE}}` / `{{BASELINE}}` / `{{PFNO_START}}` / `{{PFNO_POOL}}` / `{{NO_PFK}}` 占位符 —— **要改逻辑改这个** |
-| `scripts/work/cua/config/<PROG>.json`     | 每个程序一份按钮定义                                                                                                                       |
-| `scripts/work/ZTEST_CUA_SLOT.abap`        | $TMP 只读探针：打 4 个付款平台程序的 `pfk` 已占槽位 + Z 功能码落点，改池子前后都用它核验                                                                           |
-| `scripts/work/ZTEST_CUA_STD.abap`         | $TMP 只读探针：扒标准程序（`SAPLSLVC_FULLSCREEN` 等）的 `but`/`pfk` 原样数据 —— 「哪种槽位号合法」的取证工具                                                     |
-| `scripts/work/cua/_build/ZCUA_APPLY.abap` | 注入后的生成物，不手改                                                                                                                      |
+| `scripts/gen_cua.js`                 | **唯一入口**：读配置 → 注入模板 → 推送 → 运行 → 校验。任一环节不过就 `exit 1`                                                                              |
+| `scripts/cua/ZCUA_APPLY.tpl.abap`    | ABAP 模板，含 `*{{TARGET}}` / `{{DO_WRITE}}` / `{{BASELINE}}` / `{{PFNO_START}}` / `{{PFNO_POOL}}` / `{{NO_PFK}}` 占位符 —— **要改逻辑改这个** |
+| `scripts/cua/config/<PROG>.json`     | 每个程序一份按钮定义                                                                                                                       |
+| `scripts/ZTEST_CUA_SLOT.abap`        | $TMP 只读探针：打 4 个付款平台程序的 `pfk` 已占槽位 + Z 功能码落点，改池子前后都用它核验                                                                           |
+| `scripts/ZTEST_CUA_STD.abap`         | $TMP 只读探针：扒标准程序（`SAPLSLVC_FULLSCREEN` 等）的 `but`/`pfk` 原样数据 —— 「哪种槽位号合法」的取证工具                                                     |
+| `scripts/cua/_build/ZCUA_APPLY.abap` | 注入后的生成物，不手改                                                                                                                      |
 
 ```bash
-node scripts/work/gen_cua.js                   # 处理 config/ 下全部程序
-node scripts/work/gen_cua.js ZFID001B ZFID001C # 只处理指定程序
-node scripts/work/gen_cua.js --dry             # 只预演分配结果，不写 SAP
+node scripts/gen_cua.js                   # 处理 config/ 下全部程序
+node scripts/gen_cua.js ZFID001B ZFID001C # 只处理指定程序
+node scripts/gen_cua.js --dry             # 只预演分配结果，不写 SAP
 ```
 
 配置格式（**`pfno` / `but_no` 不用配**，ABAP 侧自动分配）：
@@ -124,15 +124,15 @@ ZFID001A 状态里的按钮**全部消失**。原因是 `RSMPE_BUT` 没有自己
 
 ### 接进"生成程序"的流程
 
-`scripts/work/gen_zfid001x.js`（付款平台子程序族生成器）现在**同时产出**  
-`scripts/work/cua/config/<PROG>.json`，所以标准四步是：
+`scripts/gen_zfid001x.js`（付款平台子程序族生成器）现在**同时产出**  
+`scripts/cua/config/<PROG>.json`，所以标准四步是：
 
 ```bash
-node scripts/work/gen_zfid001x.js                 # 1. 源码 + 文本元素 + CUA 配置
-SRC_FILE=$PWD/FICO/ZFID001B_付款审批.abap SAP_ENV_FILE=$PWD/env/dev.env \
-  node scripts/work/push_prog_source.js           # 2. 推源码并激活
-SAP_ENV_FILE=$PWD/env/dev.env PROGS=B,C,D node scripts/work/push_textelements.js   # 3. 文本元素（推完必须单独激活，见技能 sap-abap-prog-push-run §6.0）
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/gen_cua.js                          # 4. GUI 状态
+node scripts/gen_zfid001x.js                 # 1. 源码 + 文本元素 + CUA 配置
+SRC_FILE=$PWD/FICO/ZFID001B_付款审批.abap SAP_ENV_FILE=$PWD/portable/env/dev.env \
+  node scripts/push_prog_source.js           # 2. 推源码并激活
+SAP_ENV_FILE=$PWD/portable/env/dev.env PROGS=B,C,D node scripts/push_textelements.js   # 3. 文本元素（推完必须单独激活，见技能 sap-abap-prog-push-run §6.0）
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/gen_cua.js                          # 4. GUI 状态
 ```
 
 **新程序交付清单里必须有第 4 步** —— 不做这一步，程序能跑但工具栏一个自定义按钮都没有。
@@ -141,13 +141,13 @@ SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/gen_cua.js                      
 
 | 文件                                   | 作用                                                                          |
 | ------------------------------------ | --------------------------------------------------------------------------- |
-| `scripts/work/ZTEST_CUA_READ.abap`   | dump 某程序 CUA 全部表（`TAB\|字段=值` 格式，便于本地 diff）                                  |
-| `scripts/work/ZTEST_CUA_GEN.abap`    | 用 `RS_CUA_GET_FUNCTIONS` 批量列自定义功能码（程序清单写死在源码里）                              |
-| `scripts/work/ZTEST_CUA_EXPORT.abap` | 验传输归属：`RS_GET_KEY_FOR_CLM_TOOL_LOG` 取对象标识 + `RS_CUA_VERSION_EXPORT` 走传输导出入口 |
-| `scripts/work/ZTEST_CUA_WRITE.abap`  | 初版手写工具（`LT_TARGET` 写死在 ABAP 里，`C_DO_WRITE` 控开关）。仍可用，但新程序走 `gen_cua.js`      |
+| `scripts/ZTEST_CUA_READ.abap`   | dump 某程序 CUA 全部表（`TAB\|字段=值` 格式，便于本地 diff）                                  |
+| `scripts/ZTEST_CUA_GEN.abap`    | 用 `RS_CUA_GET_FUNCTIONS` 批量列自定义功能码（程序清单写死在源码里）                              |
+| `scripts/ZTEST_CUA_EXPORT.abap` | 验传输归属：`RS_GET_KEY_FOR_CLM_TOOL_LOG` 取对象标识 + `RS_CUA_VERSION_EXPORT` 走传输导出入口 |
+| `scripts/ZTEST_CUA_WRITE.abap`  | 初版手写工具（`LT_TARGET` 写死在 ABAP 里，`C_DO_WRITE` 控开关）。仍可用，但新程序走 `gen_cua.js`      |
 
 ```bash
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/adt.js run ZTEST_CUA_GEN
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/adt.js run ZTEST_CUA_GEN
 ```
 
 **`ZCUA_APPLY` 本身已内置 `RS_CUA_GET_FUNCTIONS` 复核**（第 7 步），所以日常不需要另外跑 `ZTEST_CUA_GEN`。
@@ -194,7 +194,7 @@ SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/adt.js run ZTEST_CUA_GEN
 | **49–70**  | **生成出来的 CUA 里没有这些槽 —— 填了必报「无效脚本标识」** | ❌ 禁用          |
 | 71 / 80–86 | 系统特殊号（`%SC`、`%SC+`、`&RNT`、`P--` 等）   | 占用            |
 
-**做法**：先 dump 一遍目标程序的 `pfk` 取差集（探针 `scripts/work/ZTEST_CUA_SLOT.abap` 直接打空位），  
+**做法**：先 dump 一遍目标程序的 `pfk` 取差集（探针 `scripts/ZTEST_CUA_SLOT.abap` 直接打空位），  
 再把空闲号按优先级写进 `pfnoPool`。本项目 ZFID001A~D 用的池子是 `13, 14, 16, 17, 20, 36, 38, 09`。
 
 ### 怎么挑图标（`icon_id` + `text_name` 必须成对）
@@ -230,7 +230,7 @@ SELECT id, name, button FROM icon
 | 撤销/回退    | `@0W@`  | `ICON_CANCEL`         |
 
 **本系统不存在的图标名（别猜）**：`ICON_SEND`、`ICON_UNDO`、`ICON_ROLLBACK`、`ICON_BANK`、`ICON_DOWNLOAD`、`ICON_INVOICE`、`ICON_BILL`。  
-改图标只需改 `scripts/work/cua/config/<PROG>.json` 的 `iconId`/`iconName` 后重跑 `gen_cua.js`（幂等，不用先清）。
+改图标只需改 `scripts/cua/config/<PROG>.json` 的 `iconId`/`iconName` 后重跑 `gen_cua.js`（幂等，不用先清）。
 
 ## 3. 流程（顺序不可颠倒）
 

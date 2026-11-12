@@ -1,6 +1,6 @@
 ---
 name: sap-ddic-object-ops
-description: 通过 ADT/MCP 通道在 SAP 创建与维护 DDIC 对象（域 / 数据元素 / 表 / 结构）的可复用流程，含必踩的坑——对象主语言被强制成 EN、本机 HTTP 代理让写请求 socket hang up、MCP 把任何 403 误报成 "locked by another user"/"CSRF 令牌验证失败"、建表必须 CreateTable 建壳再用 UpdateTable 填字段（手工表壳缺 DD09L 技术设置激活必挂）、CURR 字段在无币种字段的表里建不出来；含「结构内嵌表类型组件」实现接口嵌套返回（行包含在抬头里，参照 ZBPM_ISP005，子结构不冗余存父键）、「结构字段文本 DD03T 补齐」（DDL 逐字段 @EndUserText.label，只有预定义类型字段落 DD03T），以及按外部数据字典批量复刻整张表（add_ztepic07_fields.js）、新建对象的传输请求登记（E071）核验与补登（TR_OBJECTS_INSERT 无头运行必弹窗报 DYNPRO_SEND_IN_BACKGROUND，须改调 TRINT_OBJECTS_CHECK_AND_INSERT 并置 iv_with_dialog='D'；R3TR TTYP 会被静默丢弃需直接补写 E071 行）。当需要建表建数据元素改结构、补字段文本、发现对象 MASTERLANG=E、或 MCP 报锁/CSRF/ECONNRESET 时加载本技能。
+description: 通过 ADT/MCP 通道在 SAP 创建与维护 DDIC 对象（域 / 数据元素 / 表 / 结构 / 表类型），含必踩的坑：对象主语言被强制成 EN、写请求 socket hang up、MCP 把 403 误报成「locked by another user」或 CSRF 失败（多为假锁）、建表必须 CreateTable 建壳再用 UpdateTable 填字段、CURR 字段在无币种字段的表里建不出来、字段文本 DD03T 要逐字段 @EndUserText.label、结构内嵌表类型组件实现嵌套返回、新建对象的传输请求 E071 核验与补登（R3TR TTYP 会被静默丢弃）。当需要建表/建数据元素/改结构、补字段文本、发现对象 MASTERLANG=E、排查 MCP 报锁或 CSRF 或 ECONNRESET、或对象建不进传输时加载。
 agent_created: true
 ---
 
@@ -25,13 +25,13 @@ agent_created: true
 
 ```bash
 # 域 → 数据元素 → 表，全部挂到同一个请求号，包名 ZFICO
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js CreateDomain \
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/call-adt-tool.js CreateDomain \
   '{"domain_name":"ZDXXX","description":"中文描述","package_name":"ZFICO","transport_request":"DEVK900006","datatype":"CHAR","length":10,"activate":true}'
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js CreateDataElement "$(cat /tmp/dtel.json)"
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js CreateTable ...
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js UpdateTable "$(cat /tmp/tabl.json)"   # 带 ddl_code + activate
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/call-adt-tool.js CreateDataElement "$(cat /tmp/dtel.json)"
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/call-adt-tool.js CreateTable ...
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/call-adt-tool.js UpdateTable "$(cat /tmp/tabl.json)"   # 带 ddl_code + activate
 # 接口入参结构：CreateStructure 一步建好（fields 用 data_element 引用数据元素，优先于 data_type/data_length）
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js CreateStructure "$(cat /tmp/stru.json)"
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/call-adt-tool.js CreateStructure "$(cat /tmp/stru.json)"
 #   {"structure_name":"ZSXXX_HEAD","description":"接口-传入结构","package_name":"ZFICO",
 #    "transport_request":"DEVK900006","activate":true,
 #    "fields":[{"name":"ZBPMLCH","data_element":"ZEZLCBM","description":"BPM付款流程号"}, ...]}
@@ -108,7 +108,7 @@ DDIC 表被删后 **没有任何系统内痕迹可挖**：`DD02L`/`DD03L`（含�
 #    SELECT rollname, datatype, leng, decimals FROM dd04l WHERE rollname LIKE 'Z%'   # 一次拉全量再本地比对
 #    注意 XML 里的 DATATYPE/LENG/DECIMALS 是**表字段**的实际值，
 #    可能与该数据元素在本系统的定义不一致（本次就撞到 ZBCSQFKJE：原系统 CURR13,2 / 本系统错建成 CHAR13）
-# 3) CreateTable → UpdateTable(activate=true)，见 scripts/work/recreate_ztepic_tables.js
+# 3) CreateTable → UpdateTable(activate=true)，见 scripts/recreate_ztepic_tables.js
 # 4) 验证：逐字段比对 dd03l vs XML（位置/主键/ROLLNAME/类型/长度/小数），并 SELECT COUNT(*) 试读
 ```
 
@@ -129,7 +129,7 @@ node scripts/call-adt-tool.js CreateDomain "$(cat /tmp/doma.json)"
 # 2) 补/改固定值：UpdateDomain 的 fixed_values 是**整块替换**，必须传全量；同样要 package_name
 node scripts/call-adt-tool.js UpdateDomain "$(cat /tmp/doma_fv.json)"
 # 3) 回读校验
-node scripts/work/adt.js query "SELECT domname, valpos, domvalue_l, ddtext FROM dd07t \
+node scripts/adt.js query "SELECT domname, valpos, domvalue_l, ddtext FROM dd07t \
   WHERE domname LIKE 'ZDDJZT' OR domname LIKE 'ZDFKZT'"
 ```
 
@@ -177,10 +177,10 @@ lo_res->set_param_table( lr_tab ).  lo_res->next_package( ).
 
 ```bash
 # 1) 取当前 DDL 备份（结构变更前必做）
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js GetStructure '{"structure_name":"ZSFII003_H"}'
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/call-adt-tool.js GetStructure '{"structure_name":"ZSFII003_H"}'
 # 2) 用脚本删掉目标字段行，产出新 DDL，封装参数文件
 # 3) 提交（activate=true 一步到位）
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js UpdateStructure "$(cat /tmp/xxx_update.json)"
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/call-adt-tool.js UpdateStructure "$(cat /tmp/xxx_update.json)"
 #    参数：{structure_name, ddl_code, transport_request, activate}
 ```
 
@@ -217,7 +217,7 @@ define structure zbpm_isp014_item_s {
   TTYP（`ZBPM_ISP014_ITEM_T`）必须**先用 `CreateTableType` 建好**，否则激活报找不到类型。
 - **备份命名要换后缀**：同一结构做多轮改造时，若沿用 `${名称}_${日期}.ddl` 会**静默覆盖**改造前的
   基线 DDL（本次差点丢 `HEAD_S` 加组件前的版本）。范式：`backup/${n}_20260929${suffix}.ddl`，
-  首次加组件传 `_nest`，见 `scripts/work/create_isp014_objects.js` 的 `stepFixOut(suffix = '')`。
+  首次加组件传 `_nest`，见 `scripts/create_isp014_objects.js` 的 `stepFixOut(suffix = '')`。
 - **验证组件确实落库**（`dd03l`）：
   ```sql
   SELECT tabname, fieldname, position, rollname, datatype
@@ -251,7 +251,7 @@ define structure zbpm_isp014_head_s {
   推论：`DD03T` 默认只有预定义类型字段的记录，且 `DDTEXT` **默认为空**，正是「缺文本」的真凶。
 - **收口判据**：`DD03T` 中该结构每行的 `DDTEXT` 非空，且条数 = `DD03L` 里预定义类型字段的条数
   （数据元素引用字段与 TTYP 组件不计入）。
-- **一次性写法**照 `scripts/work/create_isp014_objects.js` 的 **`labels` 模式**：
+- **一次性写法**照 `scripts/create_isp014_objects.js` 的 **`labels` 模式**：
   `buildDdl` 在字段行上方按字段矩阵第三列（中文描述）生成 label；`stepFixInput` 同理处理入参结构
   （入参字段是表类型引用，同样逐字段写 label）。备份后缀用 `_labels`，别覆盖其他阶段的备份。
 - 实测（`ZBPM_ISP014`）：4 个结构一轮过，26 条 `DDTEXT` 由空变有值，
@@ -303,12 +303,12 @@ node scripts/call-adt-tool.js UpdateTable "$(cat /tmp/xxx_update.json)"   # {tab
 （接口日志类可看 `ZTREST_LOG` / `ZTFI0014` / `ZTFI0015`；平台日志看 `ZGSP_1C010`）；
 ② 确实没有的才新建（枚举型配 ZD 域）；
 ③ 改前 `GetStructure` 备份 DDL，改后逐字段比对 `DD03L` 确认类型未变。
-现成脚本 `scripts/work/create_ziflog_dtel.js`（`ddl` / `dd [名字...]` / `table` 三模式）。
+现成脚本 `scripts/create_ziflog_dtel.js`（`ddl` / `dd [名字...]` / `table` 三模式）。
 
 **复用现成元素时"字段名 = 数据元素名"可以放开**：`ZTREST_LOG.MSGTY` 挂 `MSGTY`、`ZTFI0014.MSGTY` 挂 `ZCIS_MSGTY`，
 字段名与元素名不一致是常态。这条口径只约束**新建**字段时别造同名不同义的乱象。
 - 复核数据元素主语言：`SELECT obj_name, masterlang, devclass FROM tadir WHERE obj_name IN (...)`，应为 `1`(ZH)、`ZFICO`。
-- 现成脚本 `scripts/work/add_ztepic01_fields.js`（`dtel` / `table` / `verify` 三模式）——改顶部 `FIELDS` 数组即可复用到别的表。
+- 现成脚本 `scripts/add_ztepic01_fields.js`（`dtel` / `table` / `verify` 三模式）——改顶部 `FIELDS` 数组即可复用到别的表。
 
 ### 删字段的连带检查（血泪）
 
@@ -319,10 +319,10 @@ node scripts/call-adt-tool.js UpdateTable "$(cat /tmp/xxx_update.json)"   # {tab
 3. **函数组 include 的残留 FORM** —— 这次的真凶：`LZFG_BPM002F01` 里有 4 处
    `is_head-partner` 活引用，来自两个从别的模块（SD `ZBPM_ISP007`）复制过来的 FORM，
    **在本函数组内没有任何调用方，却参与编译**。改法：注释停用（或删 include），
-   推送工具 `scripts/work/push_include_source.js`（LOCK → PUT → UNLOCK → 激活）。
+   推送工具 `scripts/push_include_source.js`（LOCK → PUT → UNLOCK → 激活）。
    函数组 include 是**跨集团**的仓库对象，一个集团改了两端都变。
 
-## 2. 验证 SQL（`node scripts/work/adt.js query "<SQL>"`）
+## 2. 验证 SQL（`node scripts/adt.js query "<SQL>"`）
 
 ```sql
 SELECT obj_name, masterlang, devclass FROM tadir WHERE obj_name IN (...)   -- 1=ZH，E=英文
@@ -340,11 +340,11 @@ SQL 不支持 JOIN（报「仅允许一个 SELECT 语句」）、字段名写错
 | DDIC 对象被 ADT 锁住（`ESDICT` 锁对象，参数 `TABL<表名>`） | **首选：请用户在 SM12 手动删除该锁条目，删完立刻重跑原命令即可激活**（实测 ZTEPICD 一次通过）。锁挂在 ADT 会话上，ABAP 侧解不掉：`ZDEQ_LOCK`(DEQUEUE_ALL) / `ZDEQ3`(_scope='3') / 带旧 lockHandle 的 UNLOCK **都无效**；`DEQUEUE_ESDICT` 用对参数（`OBJTYPE='TABL'`/`OBJNAME=<表名>`，**不是 `TABNAME`**，传错报 "Function parameter TABNAME is unknown"）后能跑通并回 `done`，**但锁依然不释放**——只能删掉这条死路尝试，别再反复试。次选：等 ADT 会话超时（约 30 min）。期间先把没锁的对象做完 |
 | 清完锁重跑建表脚本，`create` 仍报 `CSRF 令牌验证失败` | **正常现象**，不是又被锁了：inactive 对象已存在时 `CreateTable` 必然失败。**判定依据是紧随其后的 `update+activate` 返回的 `"activated":true`** |
 | 「使用者 X 当前编辑 OBJ」（真锁） | 先 `ZLOCK_LIST` / `ZTEST_ENQ_SHOW`（$TMP 程序，读 `SEQG3`/`SEQG4`）确认锁对象技术名与建立时间。**锁对象技术名不等于 `E_xxx`**：程序 include 的锁是 **`ESRDIRE`**（不是 `E_TRDIR`）。**`DEQUEUE_*` 加 `_scope='3'` 也解不掉别人会话的锁** —— 别在这上面耗时间，找持有者或等超时 |
-| MCP `UpdateDataElement` 报「… is locked by another user or session」 | **ZH 环境下大概率是假锁**。`GetInactiveObjects` 里若没有该对象，说明连写都没写进去。真因：handler 先跑 `validate`（`POST /sap/bc/adt/ddic/dataelements/validation`），对**已存在**对象返 **400**，而 `isAlreadyExistsError()` **只认英文 `already exists`**，中文消息判不出就上抛，再撞上 handler「403 一律译成被锁」的兜底。**结论：ZH 环境 MCP 改不了已存在的数据元素**，改走 `adt_ddic.js` 直连或先删重建。`UpdateDomain` 无此前置不受影响。验证：`node scripts/work/probe_dtel_validate.js <DTEL> <PKG>` |
+| MCP `UpdateDataElement` 报「… is locked by another user or session」 | **ZH 环境下大概率是假锁**。`GetInactiveObjects` 里若没有该对象，说明连写都没写进去。真因：handler 先跑 `validate`（`POST /sap/bc/adt/ddic/dataelements/validation`），对**已存在**对象返 **400**，而 `isAlreadyExistsError()` **只认英文 `already exists`**，中文消息判不出就上抛，再撞上 handler「403 一律译成被锁」的兜底。**结论：ZH 环境 MCP 改不了已存在的数据元素**，改走 `adt_ddic.js` 直连或先删重建。`UpdateDomain` 无此前置不受影响。验证：`node scripts/probe_dtel_validate.js <DTEL> <PKG>` |
 | 部分列 SELECT 取回来全空（行数对、字段空） | **`SELECT 列1,列2 … INTO TABLE @<结构表>` 是按「位置」赋值，不是按字段名**。拿 `dd07t` 整行类型接 `domvalue_l, ddtext`，值会落进前两个字段 `DOMNAME`/`DDLANGUAGE`。**不报错不告警**，只有事后取数才发现。修法：自建只含所需列、顺序与 SELECT 列表一致的结构（或 `INTO CORRESPONDING FIELDS OF`） |
 | DDIC 对象激活失败，报 include 里的旧字段 | 见上「删字段的连带检查」，`push_include_source.js` |
 | DELETE 报 `Parameter corrNr could not be found` | 补 `?corrNr=<请求号>`；能报这个说明锁已放开，是好事 |
-| 需要直连诊断/强删 | `node scripts/work/adt_ddic.js probe\|unlock\|delete\|activate dtel\|doma\|tabl 名称` |
+| 需要直连诊断/强删 | `node scripts/adt_ddic.js probe\|unlock\|delete\|activate dtel\|doma\|tabl 名称` |
 | 表/数据元素被删了，要恢复 | 系统内无残留可挖（见上），**找原系统 abapGit XML**；本系统只能靠 `DD03L` 逐字段重建 |
 | 新建表激活报 Annotation / deliveryClass | 见上「S/4 建表的两个硬校验」 |
 | 激活表报 `[E] 维护和保存 <表> 的技术设置` | 表壳没有 DD09L（手工/半途建的表）→ 见上「建表的正确起点」，**`DeleteTable` 后用 `CreateTable` 重建**，别去补 DD09L |
@@ -361,32 +361,32 @@ ADT 直连请求头（照抄 `@mcp-abap-adt/adt-clients/dist/constants/contentTy
 
 ## 4. 现成脚本
 
-- `scripts/work/create_fee_tables.js` — 本次费用报销表的完整定义与流程，模式：
+- `scripts/create_fee_tables.js` — 本次费用报销表的完整定义与流程，模式：
   `dd` 建域+数据元素 / `inline [DTEL]` 改成预定义类型（删+重建）/ `dropdom` 删域 / `reset` 全删 / `tables [表名]`
-- `scripts/work/recreate_ztepic_tables.js` — **从 abapGit XML 还原的表重建脚本**（模式可直接套用到别的表）：
-  `node scripts/work/recreate_ztepic_tables.js [ZTEPIC01|ZTEPIC02|all]`，
+- `scripts/recreate_ztepic_tables.js` — **从 abapGit XML 还原的表重建脚本**（模式可直接套用到别的表）：
+  `node scripts/recreate_ztepic_tables.js [ZTEPIC01|ZTEPIC02|all]`，
   DDL 放 `/tmp/DDL_<表名>.txt`，包 `ZFICO`、请求 `DEVK900006`
-- `scripts/work/add_ztepic01_fields.js` — **给已有表追加字段 + 配套数据元素**（`dtel` / `table` / `verify`）
-- `scripts/work/add_ztepic07_fields.js` — **按一份外部数据字典（HTML/清单）复刻整张表**（`ZTEPIC07`，22 字段）：
+- `scripts/add_ztepic01_fields.js` — **给已有表追加字段 + 配套数据元素**（`dtel` / `table` / `verify`）
+- `scripts/add_ztepic07_fields.js` — **按一份外部数据字典（HTML/清单）复刻整张表**（`ZTEPIC07`，22 字段）：
   `dtel [名字...]` 只建缺失数据元素（**支持按名过滤，用来绕沙箱 2 分钟超时**）/ `table` 改字段+激活（含 CURR 自动降级）/
   `recreate` 删表重建（表壳缺技术设置时用）/ `fix-cur` 只把 CURR 降级为 `abap.dec(n,d)` 后重激活 / `ddl` 只出 DDL / `verify` 逐字段与字典比对。
   改顶部 `FIELDS` 数组（`n/de/dt/l/k/new/desc`）即可复刻别的表。
-- `scripts/work/create_ztepicbcde.js` — **从零批量建域 + 数据元素 + 多张表**（`dd` / `tables [表名]` / `ddl` 只出 DDL 不写系统 / `all`）；
+- `scripts/create_ztepicbcde.js` — **从零批量建域 + 数据元素 + 多张表**（`dd` / `tables [表名]` / `ddl` 只出 DDL 不写系统 / `all`）；
   改顶部 `DOMAINS` / `DTELS` / `F_B`~`F_E` 字段矩阵即可复用到别的表集；`ddl` 模式先本地生成 DDL 核对再建表，能省掉一轮激活排错
-- `scripts/work/adt_ddic.js` — 直连 ADT 诊断单个 DDIC 对象
-- `scripts/work/create_isp014_objects.js` — **`ZBPM_ISP014` 全部 DDIC 对象 + 结构内嵌表组件**的生成脚本：
+- `scripts/adt_ddic.js` — 直连 ADT 诊断单个 DDIC 对象
+- `scripts/create_isp014_objects.js` — **`ZBPM_ISP014` 全部 DDIC 对象 + 结构内嵌表组件**的生成脚本：
   `head`/`item`/`sched` 建结构 / `fixout` 只重建结构 / **`nest` 给 `HEAD_S`/`ITEM_S` 追加嵌套组件**
   （`stepFixOut('_nest')`，DDL 顶部字段矩阵的末项即组件行 `['ITEM','ZBPM_ISP014_ITEM_T','行项目']`）；
   改顶部 `HEAD_FIELDS`/`ITEM_FIELDS`/`SCHED_FIELDS` 可复用到别的接口结构
-- `scripts/work/probe_dtel_validate.js` — **直探 ADT `dataelements/validation` 的真实响应**（MCP 假锁消息的定案工具）：
-  `node scripts/work/probe_dtel_validate.js <DTEL> <PKG> [EN]`，末位可指定 `sap-language` 对比中英文消息
+- `scripts/probe_dtel_validate.js` — **直探 ADT `dataelements/validation` 的真实响应**（MCP 假锁消息的定案工具）：
+  `node scripts/probe_dtel_validate.js <DTEL> <PKG> [EN]`，末位可指定 `sap-language` 对比中英文消息
 - **ADT 写链路的两个必备请求头**（缺一个就会 423 `invalid lock handle`）：
   `sap-adt-connectionid`（全程同一个 UUID）+ **`x-sap-adt-sessiontype: stateful`**。
   LOCK 的 handle 在**响应正文** `<LOCK_HANDLE>` 里，**不在响应头**（写成响应头会误判加锁失败）
-- `scripts/work/push_include_source.js` — 推送函数组 include（LOCK → PUT → UNLOCK → 激活），
+- `scripts/push_include_source.js` — 推送函数组 include（LOCK → PUT → UNLOCK → 激活），
   环境变量 `SRC_FILE` / `GROUP_NAME` / `INCLUDE_NAME` / `SAP_CLIENT_OVERRIDE`
-- `scripts/work/push_prog_source.js` — 推送可执行报表（见技能 `sap-abap-prog-push-run`）
-- `scripts/work/adt.js` — `query|table|run|dumps|dump`
+- `scripts/push_prog_source.js` — 推送可执行报表（见技能 `sap-abap-prog-push-run`）
+- `scripts/adt.js` — `query|table|run|dumps|dump`
 - `$TMP` 程序 `ZLOCK_LIST`（列锁）、`ZDEQ_LOCK`（DEQUEUE_ALL）、`ZTEST_ENQ_SHOW`（印锁明细）
 
 ---
@@ -396,9 +396,9 @@ ADT 直连请求头（照抄 `@mcp-abap-adt/adt-clients/dist/constants/contentTy
 **工具（MCP，经 `scripts/call-adt-tool.js` 调用）**：
 
 ```bash
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js DeleteStructure '{"structure_name":"ZBPM_ISP016_HEAD_S","transport_request":"DEVK900006"}'
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js DeleteTableType '{"table_type_name":"ZBPM_ISP016_ITEM_T","transport_request":"DEVK900006"}'
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js DeleteTable      '{"table_name":"ZTEPIC07","transport_request":"DEVK900006"}'
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/call-adt-tool.js DeleteStructure '{"structure_name":"ZBPM_ISP016_HEAD_S","transport_request":"DEVK900006"}'
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/call-adt-tool.js DeleteTableType '{"table_type_name":"ZBPM_ISP016_ITEM_T","transport_request":"DEVK900006"}'
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/call-adt-tool.js DeleteTable      '{"table_name":"ZTEPIC07","transport_request":"DEVK900006"}'
 ```
 
 - 参数名**各不相同**：结构 `structure_name` / 表类型 `table_type_name` / 表 `table_name` / 域 `domain_name`。
@@ -446,7 +446,7 @@ SELECT trkorr, as4pos, pgmid, object, obj_name, lockflag FROM e071
 **ADT 侧独立复核（推荐，比读表更权威）**：`GetTransport` 会带出 `wbtype` / `position` / 描述：
 
 ```bash
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/call-adt-tool.js GetTransport \
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/call-adt-tool.js GetTransport \
   '{"transport_number":"DEVK900006","include_objects":true,"include_tasks":true}'
 ```
 

@@ -43,9 +43,9 @@
 
 | 环境 | 地址 / 配置文件 | 集团 | 备注 |
 |---|---|---|---|
-| DEV | `https://sapdev.example.com:44300`，`env/dev.env` | 100 | 用户 devuser。**空壳集团** |
+| DEV | `https://sapdev.example.com:44300`，`portable/env/dev.env` | 100 | 用户 devuser。**空壳集团** |
 | DEV | 同上 + `SAP_CLIENT_OVERRIDE=300` | 300 | **真实数据都在这** |
-| DEV-B | `env/dev2.env` | 200 | MCP `adt-dev2` |
+| DEV-B | `portable/env/dev2.env` | 200 | MCP `adt-dev2` |
 
 - ★ **100 是空壳**：`BKPF / BSEG / EKKO / EKPO / RSEG / RBKP / ZTFI0002` 全 0 行。
 - ★ **300 有完整数据**：BKPF 793 / BSEG 17783 / RSEG 1050 / ANLA 330。
@@ -63,18 +63,18 @@
 
 ```bash
 # 查询 / 建对象走 MCP 工具通道；以下为工作区脚本
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/prep_object.js PROG ZFIR_0237   # ★改前一次性预取
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/adt.js query "<sql>" [rows]   # 亦可 table/run/dumps
-SAP_CLIENT_OVERRIDE=300 SAP_LANGUAGE_OVERRIDE=zh node scripts/work/adt.js <cmd|run PROG>
-CORR_NR=<父请求号> PKG=ZFICO SRC_FILE=/abs/x.abap node scripts/work/push_prog_source.js
-SAP_CLIENT_OVERRIDE=300 SRC_FILE=/abs/x.abap PKG='$TMP' node scripts/work/push_prog_source.js  # $TMP 探针
-SRC_FILE=/abs/x.abap TARGET_GROUP=ZFG_x TARGET_FM=Zx_y CORR_NR=<父请求号> node scripts/work/push_fm_source.js
-TE_FILE=...json CORR_NR=... node scripts/work/push_textelements.js
-node scripts/work/get_source.js <PROG|INCL|FM|CLAS|TABL|STRU|DTEL> <名> [GROUP] --out=/tmp/x
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/prep_object.js PROG ZFIR_0237   # ★改前一次性预取
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/adt.js query "<sql>" [rows]   # 亦可 table/run/dumps
+SAP_CLIENT_OVERRIDE=300 SAP_LANGUAGE_OVERRIDE=zh node scripts/adt.js <cmd|run PROG>
+CORR_NR=<父请求号> PKG=ZFICO SRC_FILE=/abs/x.abap node scripts/push_prog_source.js
+SAP_CLIENT_OVERRIDE=300 SRC_FILE=/abs/x.abap PKG='$TMP' node scripts/push_prog_source.js  # $TMP 探针
+SRC_FILE=/abs/x.abap TARGET_GROUP=ZFG_x TARGET_FM=Zx_y CORR_NR=<父请求号> node scripts/push_fm_source.js
+TE_FILE=...json CORR_NR=... node scripts/push_textelements.js
+node scripts/get_source.js <PROG|INCL|FM|CLAS|TABL|STRU|DTEL> <名> [GROUP] --out=/tmp/x
 node scripts/call-adt-tool.js <Tool> @args.json   # 含中文参数一律 @文件
-node scripts/work/check_activation.js             # 未激活对象清单
-PROGS=A,B node scripts/work/delete_prog.js        # 删程序
-OBJ=ZXXX OBJ_TYPE=PROG/P OBJ_URI=/sap/bc/adt/... node scripts/work/_act_dbg.js  # 完整激活报文
+node scripts/check_activation.js             # 未激活对象清单
+PROGS=A,B node scripts/delete_prog.js        # 删程序
+OBJ=ZXXX OBJ_TYPE=PROG/P OBJ_URI=/sap/bc/adt/... node scripts/_act_dbg.js  # 完整激活报文
 ```
 
 ---
@@ -103,7 +103,7 @@ OBJ=ZXXX OBJ_TYPE=PROG/P OBJ_URI=/sap/bc/adt/... node scripts/work/_act_dbg.js  
   - `Object R3TR PROG ZFIDxxx locked in task DEVK90011x (DEVUSER) not specified for this client`
     ＝ **集团不对**，跟"谁在编辑"无关。换 `corrNr`（父请求/任务号/不传）三种都没用，
     唯一解法是换回**请求所属集团**再推（实测同一程序 100 下 LOCK 立刻 200）。
-- 推可传输对象前先定集团：`env/dev.env` 的 `SAP_CLIENT=100` 就是请求所属集团，
+- 推可传输对象前先定集团：`portable/env/dev.env` 的 `SAP_CLIENT=100` 就是请求所属集团，
   脚本默认值即正确 —— **不要习惯性加 `SAP_CLIENT_OVERRIDE=300`**，那个只给 300 的 `$TMP` 探针/查数据用。
 - 源码、GUI 状态（`D010S/D010L/D010INC` 无 `MANDT`）、**文本池（`TEXTPOOL` 只有 `ID/KEY/ENTRY`，无 `MANDT`）**
   三者**都跨集团**，在请求所属集团（100）改一次，两个集团都生效。
@@ -125,7 +125,7 @@ OBJ=ZXXX OBJ_TYPE=PROG/P OBJ_URI=/sap/bc/adt/... node scripts/work/_act_dbg.js  
 2. 接口一律「**瘦函数体 + FORM**」。
 3. S/4 新语法优先，**SELECT 列表逗号分隔**。
 4. 写 SAP 前先查锁、先 backup；凭据不外传不回显。
-5. 产出位置：报告 → `测试报告/`，测试源码 → `scripts/work/`，
+5. 产出位置：报告 → `测试报告/`，测试源码 → `scripts/`，
    **交付源码归档 `FICO/<程序名>_<中文描述>.abap`**；`$TMP` 对象不传输。
 6. **文案一律走文本元素**；`MESSAGE TEXT-xxx TYPE 'S' WITH n.` 不合法 ⇒ 用辅助 FORM（范式 `frm_msg_count`）。
    接口返回的消息可直接写中文字面量。
@@ -141,7 +141,7 @@ OBJ=ZXXX OBJ_TYPE=PROG/P OBJ_URI=/sap/bc/adt/... node scripts/work/_act_dbg.js  
 11. ★★ **生产源码注释口径（用户硬要求，2026-10-09 起）**：只保留
     「汉得标准程序头 + 摘要/注意 + 变更记录 + FORM 三行横幅 + `-->`/`<--` 形参文档 + `*&---xxx-BEGIN/END` 标记 + 短行代码注释」；
     **不写**设计依据／口径／联调实测／坑位／TODO 理由；
-    **绝不把 `scripts/work/*.js`、`ZTEST_*` 写进源码**。
+    **绝不把 `scripts/*.js`、`ZTEST_*` 写进源码**。
     剥离后必做 diff：**代码本体逐行零改动**。
 12. ★★ **动手前先读 `开发模板/` 模版（2026-10-12 用户两次纠错换来）**：
     `ABAP_报表程序开发模板.abap`（报表）/ `ABAP_批导程序开发模板.abap`（批导）/
@@ -168,16 +168,16 @@ OBJ=ZXXX OBJ_TYPE=PROG/P OBJ_URI=/sap/bc/adt/... node scripts/work/_act_dbg.js  
     （实例：`ZFIR_0237` 现网比归档多 2 处改动）。
     ★★ **文本元素也必须回读（2026-11-11 用户纠错，已造成真实覆盖事故）**：
     `get_source` **只取源码，不含 TEXTPOOL**。对已存在程序做覆盖式推送前，必须
-    `SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/read_textelements.js <PROG> symbols`
+    `SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/read_textelements.js <PROG> symbols`
     与 `... <PROG> selections` 各跑一次，取**激活版**全文存 `backup/<PROG>_textelements_<日期>.json`，
-    与 `scripts/work/textelements/<PROG>.json` 逐行 diff 后**人工合并**，再 `push_textelements.js`。
+    与 `scripts/textelements/<PROG>.json` 逐行 diff 后**人工合并**，再 `push_textelements.js`。
     **严禁拿陈旧 JSON 直接推文本元素** —— 用户在 SE38「转到 → 文本元素」前台改的内容会被无痕冲掉，
     代码 diff 完全看不出来，事后只能靠他回忆。凡交付四步中的第 3 步（推文本元素）执行前，本条为强制前置。
 15. ★★ **测试／探针对象测完即删（2026-11-05 用户定，取代 2026-09-14 旧口径「放 $TMP 不传输不删除」）**：
     客户不需要、也不应看到测试程序。**每轮联调／验证结束，本轮新建的 `$TMP` 测试程序、探针、
     临时类／表一律从系统删掉**，不留 `TADIR` 残留；不得把测试对象挂进 `ZFICO` 等交付包或写进传输请求。
     - 顺序：**先 `get_source` 回读源码留档到 `backup/`（删除不可逆）→ 再删 → 再回查 `TADIR`/`TRDIR` 确认清零**。
-    - 删除命令：`PROGS=A,B node scripts/work/delete_prog.js`（`$TMP` 本地对象**不需要请求号**，
+    - 删除命令：`PROGS=A,B node scripts/delete_prog.js`（`$TMP` 本地对象**不需要请求号**，
       绝不为此新建请求号；脚本自带 LOCK→DELETE，删除后不用 UNLOCK）。
     - **只删本轮自己建的**；他人创建的（`DEVUSER2`／`200001` 等）、已挂包／请求的对象、
       以及仍在用的 DEMO／工作台（如 `ZDEMO_WORKBENCH`）一律不动，需要清理先给清单等用户确认。
@@ -206,7 +206,7 @@ OBJ=ZXXX OBJ_TYPE=PROG/P OBJ_URI=/sap/bc/adt/... node scripts/work/_act_dbg.js  
   **平台快照 MEMO 不回挂日志号**（用户口径「接口平台不需要管 MEMO」⇒ MEMO 保持原字面量），
   日志定位靠 `FUNCNAME + CRDAT/CRTIM`；查询走 TCODE `ZIFLOG`（报表 `ZIFLOG_VIEW`）。
   `MSGTY` 只标**传输层**（连不上/发不出/收不到才 `'E'`；HTTP 403 属"收到响应"⇒ 空）。
-  实施样例：`ZCBS_ISC001~006`（补丁脚本 `scripts/work/patch_cbs_isc_iflog_*.py`）。
+  实施样例：`ZCBS_ISC001~006`（补丁脚本 `scripts/patch_cbs_isc_iflog_*.py`）。
 
 ### 报文与网关
 
@@ -363,7 +363,7 @@ OBJ=ZXXX OBJ_TYPE=PROG/P OBJ_URI=/sap/bc/adt/... node scripts/work/_act_dbg.js  
 - ★★ `prep_object.js`（2026-11-11）：**改任何既有对象前的第一步**。一轮并行取齐
   「现网源码 + 文本元素 symbols/selections 激活版 + TADIR + E071/E070 请求归属 + 档案命中段 + 归档 diff」，
   并直接给判据（现网 vs 归档是否一致、挂哪个请求号、有无业务 include）。
-  用法 `node scripts/work/prep_object.js <PROG|FM|CLAS|INCL> <名> [函数组]`，产出落 `backup/prep_<名>_<时间戳>/`。
+  用法 `node scripts/prep_object.js <PROG|FM|CLAS|INCL> <名> [函数组]`，产出落 `backup/prep_<名>_<时间戳>/`。
   替代原先 5~6 轮串行往返（get_source → read_textelements×2 → 查 TADIR → diff 归档 → 翻档案）。
   ★ 实现坑：①每个并行任务必须用**独立 ADT 会话**（独立 connectionid + cookie + csrf），共用一个 stateful 会话并发会被 403；
   ②cookie jar 必须存整段 `name=value`，只存 value 会让 Cookie 头退化成裸值 → 报「CSRF 令牌验证失败」；

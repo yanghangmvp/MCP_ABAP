@@ -63,8 +63,8 @@ ENDIF.
 
 **排查手段**：
 ```bash
-node scripts/work/adt.js query "SELECT VBELN, POSNR, VGBEL, VGPOS, VGTYP FROM VBAP WHERE VBELN = '<退货单>'"   # 看标准做法长什么样
-node scripts/work/adt.js query "SELECT * FROM T100 WHERE ARBGB = 'V2' AND MSGNR = '068' AND SPRSL = '1'"        # 消息原文（占位符顺序决定怎么读）
+node scripts/adt.js query "SELECT VBELN, POSNR, VGBEL, VGPOS, VGTYP FROM VBAP WHERE VBELN = '<退货单>'"   # 看标准做法长什么样
+node scripts/adt.js query "SELECT * FROM T100 WHERE ARBGB = 'V2' AND MSGNR = '068' AND SPRSL = '1'"        # 消息原文（占位符顺序决定怎么读）
 ```
 
 ### 10.2 退货订单 `Z011`：项目类别必须与订单类型匹配
@@ -79,8 +79,8 @@ V1 321  没有为项目 &2 定义项目类别 &1
 **根因**：项目类别由 `T184`（项目类别确定：`AUART` + `MTPOS`(物料项目类别组) + `VWPOS`… → `PSTYV`）决定。同一物料在两种订单类型下是**两套独立配置**：
 
 ```bash
-node scripts/work/adt.js query "SELECT * FROM T184 WHERE AUART = 'Z011'"   # → Z011 + NORM → PSTYV Z011
-node scripts/work/adt.js query "SELECT * FROM T184 WHERE AUART = 'Z001'"   # → Z001 + NORM → PSTYV Z001
+node scripts/adt.js query "SELECT * FROM T184 WHERE AUART = 'Z011'"   # → Z011 + NORM → PSTYV Z011
+node scripts/adt.js query "SELECT * FROM T184 WHERE AUART = 'Z001'"   # → Z001 + NORM → PSTYV Z001
 ```
 
 **正解**：退货单的行项目 `PSTYV` 传 **`Z011`**，**或干脆留空** —— 留空时由 SAP 按「订单类型 + 物料项目类别组」自动确定（两种都实测通过）。**最稳的是留空**，把项目类别交给配置决定，接口不用关心订单类型差异。

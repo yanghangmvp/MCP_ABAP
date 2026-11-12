@@ -1,6 +1,6 @@
 ---
 name: sap-abap-prog-push-run
-description: 在 ADT/MCP 通道上把 ABAP 可执行报表（REPORT）推送并激活到 SAP、运行取回结果、再产出测试报告的完整流程。含 PROG 创建/激活报文的 4 处协议细节、按 SAP_ENV_FILE 或 SAP_CLIENT_OVERRIDE 切集团、adt.js run 的适用边界、★「动手前先对齐 `开发模板/` 项目模版」（程序头八字段/事件段/FORM 命名/LVC ALV/文本元素编号的硬指标自检清单，用户两次纠错换来的规矩）、★「带选择屏幕和 ALV 的报表也能无头运行：无 GUI 时 ALV 自动降级成清单输出、网格标题与列标题可核，但 ALV 调用之前有 WRITE 就必 500 Screen output without connection to user；验文本元素必须带 SAP_LANGUAGE_OVERRIDE=zh，否则 ZH-only 文本池读空会误判成文本没推上去」、无头运行返回 HTTP 500 时「用短文本反查运行时错误名（TABLE_INVALID_INDEX / ITAB_ILL_COMPONENT 等）+ 注释二分法」的定位手法、★「短文本为空时用 gen_e2e_harness.js 生成 $TMP E2E 副本，一刀切开『ALV 渲染限制』与『真实转储』」的判定手法、★「FG 内 FORM 形参类型与标准 FM 形参类型不一致（本系统 TDNAME=CHAR16 vs READ_TEXT 的 TDOBNAME=CHAR70）导致编译通过但运行期 500 Type conflict」的根因与两种修法（改 `TYPE tdobname`；或 STXL 直读 + IMPORT FROM INTERNAL TABLE 替代 READ_TEXT）、（BAPI 调用相关经验已抽到 `sap-abap-bapi-usage`）、★★「长文本必须先批量取回再内存 IMPORT，禁止在循环里逐条 SELECT」（含 FOR ALL ENTRIES 空表防护、`INTO` 必须放 SELECT 末尾、键表分批、实测 13,400 次往返→1 次）、★「接口返回『行包含在抬头里』的嵌套结果集（参照 `ZBPM_ISP005`：DDIC 结构内嵌 TTYP 组件 + ABAP 按唯一键二分归位）」、SY-TABIX 被 READ TABLE 改写导致 DELETE ... INDEX 0 转储的陷阱、文本元素（TEXT-xxx）推送后必须单独激活（PROG/PX 对象，激活父程序不会连带激活它）的排查方法，以及「用场景表驱动的诊断报表直接调 BAPI 打印 MSGID/MSGNO/V1..V4」这种把模糊报错钉死到根因的排查手法，以及**批导程序双按钮的状态机纪律**（待处理行必须用不进字段目录的独立内部标记，绝不能用 `ICON`/`MSG` 这类输出列当状态机，否则「先测试导入再正式导入」会空跑）与 **E2E 探针「不得出现任何手工复位」** 的验证纪律。当需要新建/更新 $TMP 测试报表、跑 SAP 端回归用例、推送函数模块/文本元素、或 SAP 只回一句拼接消息/一个 500 需要定位根因时加载。
+description: 在 ADT/MCP 通道上推送、激活、无头运行 ABAP 报表（REPORT）并产出测试报告（跨项目通用）。覆盖：PROG 创建/激活报文的协议细节、按 env 文件或 SAP_CLIENT_OVERRIDE 切集团、adt.js run 的适用边界、无头运行返回 500 时「短文本反查运行时错误名 + 注释二分」的定位手法、短文本为空时用 gen_e2e_harness.js 切分「ALV 渲染限制」与「真实转储」、长文本必须批量取回再内存 IMPORT、文本元素推送后须单独激活、ALV 自定义按钮（function ALV 已断，走 CUA 功能码）、生产订单状态操作、批导程序双按钮的状态机纪律（待处理行用独立内部标记，不能用 ICON/MSG 当状态机）、E2E 探针「不得出现任何手工复位」的验证纪律。BAPI 调用细节见 sap-abap-bapi-usage。当需要新建/更新 $TMP 测试报表、跑 SAP 端回归用例、推送函数模块或文本元素、给 ALV 加按钮、或 SAP 只回一句拼接消息/一个 500 需要定位根因时加载。
 agent_created: true
 ---
 
@@ -16,9 +16,9 @@ agent_created: true
 
 | 脚本 | 切集团方式 |
 |---|---|
-| `scripts/work/push_prog_source.js` | `SAP_ENV_FILE=/tmp/sap300.env`（读 env 文件的 `SAP_CLIENT`）**或** `SAP_CLIENT_OVERRIDE=300`（2026-09-29 起支持，与 `adt.js` 同口径，**优先级高于 env 文件**） |
-| `scripts/work/call-adt-tool.js` | `SAP_ENV_FILE=/tmp/sap300.env`（脚本读 env 文件的 `SAP_CLIENT`） |
-| `scripts/work/adt.js`（query/table/run/dumps） | `SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300`（**只认 OVERRIDE 变量，env 文件里的 SAP_CLIENT 对它无效**） |
+| `scripts/push_prog_source.js` | `SAP_ENV_FILE=/tmp/sap300.env`（读 env 文件的 `SAP_CLIENT`）**或** `SAP_CLIENT_OVERRIDE=300`（2026-09-29 起支持，与 `adt.js` 同口径，**优先级高于 env 文件**） |
+| `scripts/call-adt-tool.js` | `SAP_ENV_FILE=/tmp/sap300.env`（脚本读 env 文件的 `SAP_CLIENT`） |
+| `scripts/adt.js`（query/table/run/dumps） | `SAP_ENV_FILE=$PWD/portable/env/dev.env SAP_CLIENT_OVERRIDE=300`（**只认 OVERRIDE 变量，env 文件里的 SAP_CLIENT 对它无效**） |
 
 生成 300 环境文件：
 ```bash
@@ -29,14 +29,14 @@ awk '{if($0~/^SAP_CLIENT=/)print "SAP_CLIENT=300"; else print}' env/dev.env > /t
 **⚠ 可传输对象（非 $TMP）推送报 403 时先换集团，别当权限问题**：
 报 `Object R3TR PROG ZXXXX locked in task DEVK900007 (USER) not specified for this client`
 ＝ 该对象已在**另一个集团**的任务里被锁，**换回请求所属集团再推即可**
-（实例：`ZFIB001` 用 `SAP_ENV_FILE=/tmp/sap300.env` 报 403，用 `env/dev.env`＝100 一次通过）。
+（实例：`ZFIB001` 用 `SAP_ENV_FILE=/tmp/sap300.env` 报 403，用 `portable/env/dev.env`＝100 一次通过）。
 `$TMP` 对象不受此限，两个集团都能推。
 
 ## 1. 推送报表
 
 ```bash
-SAP_ENV_FILE=/tmp/sap300.env SRC_FILE=$PWD/scripts/work/ZZTEST_XXX.abap \
-  node scripts/work/push_prog_source.js          # 可选 PKG=ZFICO，默认 $TMP
+SAP_ENV_FILE=/tmp/sap300.env SRC_FILE=$PWD/scripts/ZZTEST_XXX.abap \
+  node scripts/push_prog_source.js          # 可选 PKG=ZFICO，默认 $TMP
 ```
 源码首行必须是 `REPORT zxxx.`（脚本用正则取程序名）。流程：POST 创建 → LOCK → PUT `source/main` → UNLOCK → ACTIVATE。
 
@@ -90,12 +90,12 @@ SAP_ENV_FILE=/tmp/sap300.env SRC_FILE=$PWD/scripts/work/ZZTEST_XXX.abap \
 ### 1.1 ★ 报表交付标准四步（缺一步就是半成品）
 
 ```bash
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/gen_zfid001x.js          # 1. 生成源码 + 文本元素 + CUA 配置
-SAP_ENV_FILE=$PWD/env/dev.env SRC_FILE=$PWD/FICO/<PROG>_<描述>.abap \
-  node scripts/work/push_prog_source.js                                  # 2. 推源码并激活
-SAP_ENV_FILE=$PWD/env/dev.env PROGS=B,C,D \
-  node scripts/work/push_textelements.js                                 # 3. 文本元素（PUT 完必须单独激活，见 §6.0）
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/gen_cua.js               # 4. GUI 状态（功能码 + 图标 + 文本）
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/gen_zfid001x.js          # 1. 生成源码 + 文本元素 + CUA 配置
+SAP_ENV_FILE=$PWD/portable/env/dev.env SRC_FILE=$PWD/FICO/<PROG>_<描述>.abap \
+  node scripts/push_prog_source.js                                  # 2. 推源码并激活
+SAP_ENV_FILE=$PWD/portable/env/dev.env PROGS=B,C,D \
+  node scripts/push_textelements.js                                 # 3. 文本元素（PUT 完必须单独激活，见 §6.0）
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/gen_cua.js               # 4. GUI 状态（功能码 + 图标 + 文本）
 ```
 
 **第 4 步最容易漏**：不做的话程序能跑、文本也对，但工具栏上一个自定义按钮都没有。
@@ -104,7 +104,7 @@ SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/gen_cua.js               # 4. GU
 ## 2. 运行
 
 ```bash
-SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js run ZZTEST_XXX
+SAP_ENV_FILE=$PWD/portable/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/adt.js run ZZTEST_XXX
 ```
 - `run` 走 `/sap/bc/adt/programs/programrun/<name>`，`Accept: text/plain`，服务端把结果渲染成文本表返回。
 - **带选择屏幕的报表也能跑**（2026-10-12 更正）：`ZIFLOG_VIEW`（`SELECT-OPTIONS` ×4 + `PARAMETERS`）
@@ -113,7 +113,7 @@ SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js r
 - **★ ALV 报表也能无头验**（2026-10-12 更正，旧结论"带 ALV 必然 500"过宽）：无 GUI 时
   `REUSE_ALV_GRID_DISPLAY*` **自动降级成清单输出**，返回**网格标题 + 列标题 + 数据行**的文本表 ——
   列标题是不是 `TEXT-T0n` 一眼可见。**唯一硬约束：ALV 调用之前一句 `WRITE` 都不能有**，否则必 500
-  `Screen output without connection to user`（探针 `scripts/work/ZTEST_ALV_HEADLESS.abap` 两版对照坐实）。
+  `Screen output without connection to user`（探针 `scripts/ZTEST_ALV_HEADLESS.abap` 两版对照坐实）。
   诊断信息挪到 ALV 之后，或塞进列标题/数据行。
 - **验文本元素必须带 `SAP_LANGUAGE_OVERRIDE=zh`**：不传时按用户主语言（本系统 = **EN**）开会话，
   而项目文本池只有 ZH 版 ⇒ 标题/列头**全空**，极易误判成"文本元素没推上去"。
@@ -122,7 +122,7 @@ SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js r
   - **实测反例（2026-09-29）**：`SET LOCALE LANGUAGE '1'.` / `sy-langu = '1'.` **都改不动 BAPI 的取文本语言** —— 见 §6.4。想在 ADT 无头会话下切语言，**唯一有效手段是 HTTP 头 `sap-language`**。
 - **会话语言由 HTTP 头决定**：`adt.js` 支持 `SAP_LANGUAGE_OVERRIDE`（2026-09-29 起）——
   ```bash
-  SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 SAP_LANGUAGE_OVERRIDE=zh node scripts/work/adt.js run ZTEST_XXX
+  SAP_ENV_FILE=$PWD/portable/env/dev.env SAP_CLIENT_OVERRIDE=300 SAP_LANGUAGE_OVERRIDE=zh node scripts/adt.js run ZTEST_XXX
   ```
   不传则取会话默认（`client 100` 实测 `sy-langu='1'` / `client 300` 实测 `'E'`）。**BAPI 标准消息文本、`TSPAT` 产品组文本、`T100` 消息文本都按这个语言查**。
 
@@ -143,14 +143,14 @@ FM 常把 `BAPIRET2` 拼成 `/msg1/msg2/…` 返回，信息量不足。做法�
 
 - `ACDOCA-HSL` 为**带符号**金额（借正贷负），校验借贷平衡时要对贷方取 `abs( )`，否则平衡凭证会被误判为不平。
 - 科目/业务伙伴号在 `SKB1` / `LFB1` 里是 **10 位补零**存储：查 `100001` 要写成 `0000100001`，或直接用 `LIKE '%100001%'`。
-- 诊断报表与回归报表都放 `$TMP`、不建请求、不传输，源码同步归档到 `scripts/work/`。
+- 诊断报表与回归报表都放 `$TMP`、不建请求、不传输，源码同步归档到 `scripts/`。
 
 ## 5. 挂传输请求（对象落到可传输包时）
 
 创建/LOCK/PUT 都要带 **父请求号**（不是任务号，传任务号会报对象已被锁）：
 
 ```bash
-SAP_ENV_FILE=$PWD/env/dev.env CORR_NR=DEVK900006 PKG=ZFICO SRC_FILE=/abs/x.abap node scripts/work/push_prog_source.js
+SAP_ENV_FILE=$PWD/portable/env/dev.env CORR_NR=DEVK900006 PKG=ZFICO SRC_FILE=/abs/x.abap node scripts/push_prog_source.js
 ```
 
 - 脚本用 `CORR_Q(first)` 在 CREATE / LOCK / PUT 三处拼 `corrNr=`（**PUT 也要带**，只带 LOCK 会 400 `Parameter corrNr could not be found`）。
@@ -168,13 +168,13 @@ Object LIMU FUNC ZBPM_ISP002 locked in task DEVK900007 (DEVUSER) not specified f
 **这不是死锁，是集团不匹配。** 任务 / 请求是**集团相关**的（E070-MANDT），对象锁也记在任务的集团下；如果请求建在 client 100，却在 300 里 LOCK，ADT 就认定这把锁"不属于本 client"，直接 403。
 
 - **判据**：`SELECT trkorr, strkorr, trfunction, trstatus, as4user, as4date, as4time FROM e070 WHERE trkorr LIKE 'DEVK%'` —— `trfunction='K'` 是请求、`'S'` 是任务，任务的 `strkorr` 指向其父请求。看 `as4date/as4time` 可判断锁是"活动会话"还是"残留"。
-- **处置**：把 `SAP_CLIENT_OVERRIDE` **去掉**，用 `env/dev.env` 里的默认 `SAP_CLIENT` 推送（本项目 DEV 的请求都建在 client 100）。
+- **处置**：把 `SAP_CLIENT_OVERRIDE` **去掉**，用 `portable/env/dev.env` 里的默认 `SAP_CLIENT` 推送（本项目 DEV 的请求都建在 client 100）。
 
 ```bash
 # ✅ 正确：模块池/函数模块改源码，用请求所属的 client
-SAP_ENV_FILE=$PWD/env/dev.env CORR_NR=DEVK900006 \
+SAP_ENV_FILE=$PWD/portable/env/dev.env CORR_NR=DEVK900006 \
   TARGET_GROUP=ZFG_BPM002 TARGET_FM=ZBPM_ISP002 \
-  SRC_FILE=$PWD/scripts/work/ZBPM_ISP002_new.abap node scripts/work/push_fm_source.js
+  SRC_FILE=$PWD/scripts/ZBPM_ISP002_new.abap node scripts/push_fm_source.js
 ```
 
 - **别混淆两条规则**：**ABAP 源码是跨集团的**（用哪个 client 推、激活的是同一份），但**对象锁/传输请求是集团相关的**；而 **`$TMP` 测试程序的对象是集团相关的**，必须建在目标集团（300）。
@@ -191,8 +191,8 @@ SAP_ENV_FILE=$PWD/env/dev.env CORR_NR=DEVK900006 \
 
 ```bash
 # ✅ 新程序 / 老程序都这么推（已存在时脚本会自动回写标题）
-SAP_ENV_FILE=$PWD/env/dev.env CORR_NR=DEVK900006 PKG=ZGL DESC="接口报文日志查询" \
-  SRC_FILE=/abs/x.abap node scripts/work/push_prog_source.js
+SAP_ENV_FILE=$PWD/portable/env/dev.env CORR_NR=DEVK900006 PKG=ZGL DESC="接口报文日志查询" \
+  SRC_FILE=/abs/x.abap node scripts/push_prog_source.js
 ```
 
 脚本输出会打印 `PUT meta => 200 (标题: DIAG -> 接口报文日志查询)` 和 `description => …`，每次核对。
@@ -207,8 +207,8 @@ SAP_ENV_FILE=$PWD/env/dev.env CORR_NR=DEVK900006 PKG=ZGL DESC="接口报文日�
 ### 5.2 函数模块（FM）推送
 
 ```bash
-SAP_ENV_FILE=$PWD/env/dev.env CORR_NR=DEVK900006 TARGET_GROUP=ZFG_BPM002 TARGET_FM=ZBPM_ISP002 \
-  SRC_FILE=/abs/x.abap node scripts/work/push_fm_source.js
+SAP_ENV_FILE=$PWD/portable/env/dev.env CORR_NR=DEVK900006 TARGET_GROUP=ZFG_BPM002 TARGET_FM=ZBPM_ISP002 \
+  SRC_FILE=/abs/x.abap node scripts/push_fm_source.js
 ```
 
 流程：GET 预热会话 → LOCK（带 corrNr）→ PUT `source/main` → UNLOCK → ACTIVATE。**顺序不可颠倒。**
@@ -217,7 +217,7 @@ SAP_ENV_FILE=$PWD/env/dev.env CORR_NR=DEVK900006 TARGET_GROUP=ZFG_BPM002 TARGET_
 
 ```bash
 # ① 拉回源码与推送源逐字 diff
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/get_source.js FM ZBPM_ISP002 ZFG_BPM002 --out=/tmp/after.abap
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/get_source.js FM ZBPM_ISP002 ZFG_BPM002 --out=/tmp/after.abap
 diff <(tr -d '\r' < /tmp/after.abap) <(tr -d '\r' < 推送源.abap)
 # ② 未激活对象应为 0：GET /sap/bc/adt/activation/inactiveobjects，过滤 adtcore:name
 ```
@@ -240,11 +240,11 @@ ENDFORM.  " ← 判断依据：报错行号指向 FORM，而不是 FUNCTION 顶�
 
 ```bash
 # ① 列函数组的全部 include
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/adt.js query \
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/adt.js query \
   "SELECT master, include FROM d010inc WHERE master = 'SAPLZFG_BPM002'"
 #   → LZFG_BPM002$01（TOP）/ LZFG_BPM002U01（PBO…）/ LZFG_BPM002F01（FORM）/ ZGSP_1C_RFC_LOGGER …
 # ② 拉 FORM include（名字规律：L<函数组>F01）
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/get_source.js INCL LZFG_BPM002F01 --out=/tmp/x.abap
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/get_source.js INCL LZFG_BPM002F01 --out=/tmp/x.abap
 grep -nE "^FORM|^ENDFORM" /tmp/x.abap        # ★ 用 -E，BSD grep 不认 \|
 ```
 **判据**：主源码里 `PERFORM frm_xxx` 有调用点、但全文搜不到 `FORM frm_xxx`，就是它躺在 include 里（别误判成"这段逻辑没实现"）。
@@ -256,7 +256,7 @@ grep -nE "^FORM|^ENDFORM" /tmp/x.abap        # ★ 用 -E，BSD grep 不认 \|
 **接口是否可被外围（RFC/HTTP）调用：查 `ENLFDIR`**（注意是 `ENLFDIR`，`ENLFD` 报「找不到」）：
 
 ```bash
-SAP_ENV_FILE=$PWD/env/dev.env node scripts/work/adt.js query \
+SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/adt.js query \
   "SELECT funcname, area, active FROM enlfdir WHERE funcname LIKE 'ZBPM_ISP%'"
 # ACTIVE='X' 即远程启用；新建的函数默认在表内，无需手工勾选
 ```
@@ -365,10 +365,10 @@ SELECT tdobject, tdname, tdid, tdspras, clustr, clustd
 - 写变量 `TITLE gv_title_b1` 报的是 EU 消息 **`The name of the comment can be up to eight characters long.`**（文案极具误导性，行号指向 TITLE 后面的操作数）。`act_dump_prog.js` 会用 `href="...#start=行,列"` 给出精确坐标，**别靠消息文案猜**。
 - 正确写法：`WITH FRAME TITLE text-001.`，且**必须先推文本元素再激活源码**（激活时语法检查会校验符号存在）。
 
-推送文本元素（`scripts/work/push_textelements.js`，JSON 见 `scripts/work/textelements/<PROG>.json`）：
+推送文本元素（`scripts/push_textelements.js`，JSON 见 `scripts/textelements/<PROG>.json`）：
 
 ```bash
-SAP_ENV_FILE=$PWD/env/dev.env CORR_NR=DEVK900006 TE_FILE=$PWD/scripts/work/textelements/ZFIR005.json node scripts/work/push_textelements.js
+SAP_ENV_FILE=$PWD/portable/env/dev.env CORR_NR=DEVK900006 TE_FILE=$PWD/scripts/textelements/ZFIR005.json node scripts/push_textelements.js
 ```
 
 **★ 增删符号的顺序不一样，别背成一条口诀**
@@ -381,7 +381,7 @@ SAP_ENV_FILE=$PWD/env/dev.env CORR_NR=DEVK900006 TE_FILE=$PWD/scripts/work/texte
   实测：148 个符号回读 443 行、157 个回读 470 行（每符号 `@MaxLength` + `KEY=TEXT` + 空行 = 3 行）；
   `selections` 8 条 = 15 行、9 条 = 17 行。
   **但 `push_textelements.js` 的回读只打印前几行预览 + 总行数** —— 要确认**某一个符号**是否真没了，行数不够、
-  得拉全文：`node scripts/work/read_textelements.js <PROG> symbols | grep -E "^T6[0-9]="`。
+  得拉全文：`node scripts/read_textelements.js <PROG> symbols | grep -E "^T6[0-9]="`。
   （只读脚本，已进本仓库；要点：primer GET 用 `Accept: '*/*'`，后续请求必须带 `x-sap-adt-sessiontype: stateful`。）
 - 清理时顺手做一次**一致性比对**（比人眼可靠）：源码里所有 `text-xxx` 引用集合 vs JSON 配置集合，
   双向差集都应为空。`SELECTION-SCREEN` 块里只剩一个元素时**整块删掉**（保留空块会留一个空白框）。
@@ -554,7 +554,7 @@ node scripts/call-adt-tool.js UpdateMessage \
 
 **不要查 `D020S`** —— 那是 dynpro 屏幕头表，`TYPE='S'` 是普通屏幕（样本 `dnum/fnum = 1000`），**GUI 状态根本不在那里**。我曾据此误判"用户没建状态"，被实测打脸。
 
-正确做法：写个 `$TMP` 诊断程序调官方接口，ADT 跑一次即可（范式 `scripts/work/ZZTEST_CUA.abap`）：
+正确做法：写个 `$TMP` 诊断程序调官方接口，ADT 跑一次即可（范式 `scripts/ZZTEST_CUA.abap`）：
 
 ```abap
 DATA: lt_sta TYPE TABLE OF rsmpe_stat,
@@ -662,9 +662,9 @@ ENDFORM.
 
 **结论：GUI 状态的功能码可以用 SE41 的宿主 API 自动写，不必人工。** 与「ADT 无 TCODE 资源 → 写 `$TMP` 报表调 `RPY_TRANSACTION_INSERT`」同构。
 
-**标准入口（推荐）：`node scripts/work/gen_cua.js`** —— 配置驱动，一条命令跑完
+**标准入口（推荐）：`node scripts/gen_cua.js`** —— 配置驱动，一条命令跑完
 「读配置 → 注入模板 → 推送 → 运行 → 回读 + `RS_CUA_GET_FUNCTIONS` 双复核」。
-每个程序一份 `scripts/work/cua/config/<PROG>.json` 定义按钮（功能码/文字/图标/信息文本），
+每个程序一份 `scripts/cua/config/<PROG>.json` 定义按钮（功能码/文字/图标/信息文本），
 **`pfno` / `but_no` 不用配**，ABAP 侧自动挑空闲号、重跑沿用旧号（幂等）。
 `gen_cua.js` 任一校验不过就非零退出，不会静默通过。
 
@@ -736,12 +736,12 @@ FORM frm_user_command USING pv_ucomm LIKE sy-ucomm
   CALL METHOD gr_grid->check_changed_data.   " ← 少了这行，勾选全部丢失
   CASE pv_ucomm. ...
 ```
-- 改 OO ALV 前先读源码：**声明用 `CLASD`、实现用 `CLASI`**（`node scripts/work/get_source.js CLASD|CLASI CL_GUI_ALV_GRID --out=/tmp/x`）。**核查"某方法/事件是否被调用"必须读 `CLASI`** —— `CLASD` 只有 METHOD 声明，在定义文件里 grep 调用点必然得到「0 处」的**假结论**。本项目据此复核 `_raise_evt_toolbar`：实现文件 16608 行里只有第 16529 行的 `method _raise_evt_toolbar.` 定义、全文无调用点（结论成立，但方法要用对）。**别凭记忆写 OO ALV API。**
+- 改 OO ALV 前先读源码：**声明用 `CLASD`、实现用 `CLASI`**（`node scripts/get_source.js CLASD|CLASI CL_GUI_ALV_GRID --out=/tmp/x`）。**核查"某方法/事件是否被调用"必须读 `CLASI`** —— `CLASD` 只有 METHOD 声明，在定义文件里 grep 调用点必然得到「0 处」的**假结论**。本项目据此复核 `_raise_evt_toolbar`：实现文件 16608 行里只有第 16529 行的 `method _raise_evt_toolbar.` 定义、全文无调用点（结论成立，但方法要用对）。**别凭记忆写 OO ALV API。**
 - **想在 ADT 里"跑一次看 GUI 效果"做不到**：`REUSE_ALV_GRID_DISPLAY_LVC` 必然 `CALL SCREEN 500`，ADT 驱动不了 dynpro。**功能码是否登记成功**可以自动验证（`RS_CUA_GET_FUNCTIONS`，见 7.5）；但**按钮实际长什么样、排在哪**只能请用户在 GUI 里目视确认。
 
 ### 7.6 ★ 标准弹框 / 弹窗表格：实测可用的 FM 与「反直觉」返回语义
 
-2026-09-17 做 ZFID001A 的 8 个按钮逻辑时实测。**先读 FM 源码再写调用**（`node scripts/work/get_source.js FM <名> <函数池> --out=/tmp/x`，
+2026-09-17 做 ZFID001A 的 8 个按钮逻辑时实测。**先读 FM 源码再写调用**（`node scripts/get_source.js FM <名> <函数池> --out=/tmp/x`，
 函数池用 `SELECT funcname, pname FROM tfdir WHERE funcname = '...'` 查），别凭记忆：
 
 | 需求 | FM（函数池） | 关键参数 |
@@ -817,7 +817,7 @@ LOOP AT gt_tab ASSIGNING <fs_tab> WHERE exist IS INITIAL.
 
 ## 8. 可靠性与 SQL 侧注意
 
-- **激活报错只给一条消息时**，用 `SRC_NAME=ZXXX node scripts/work/act_dump_prog.js` 打原始 `chkl:messages`（带 `href="#start=行,列"`），修完再推，逐轮收敛。
+- **激活报错只给一条消息时**，用 `SRC_NAME=ZXXX node scripts/act_dump_prog.js` 打原始 `chkl:messages`（带 `href="#start=行,列"`），修完再推，逐轮收敛。
 - **`@abap_true` 不允许与 `FOR ALL ENTRIES` 组合**：激活报 `The addition ABAP_TRUE is not allowed in combination with FOR ALL ENTRIES. Use JOINs or global temporary tables instead of FOR ALL ENTRIES.`（`SELECT SINGLE @abap_true … FOR ALL ENTRIES` 也一样不合法）。想要"存在即命中"，改成查**单个实际列**再判空：
 
 ```abap
@@ -857,7 +857,7 @@ PERFORM assert_eq USING 1 '返回类型应为 S' gv_e gv_a.
 ```
 
 - **`adt.js query`（该 SQL 服务）不支持聚合函数**：`SELECT MIN(belnr) AS minb FROM bkpf` 报 `Unknown column name "MIN(BELNR)"`；`SELECT COUNT(*) AS c FROM t` 可用。要极值就取全量再本地算。
-- 复核取值逻辑时可写**无选择屏幕的** `$TMP` 诊断报表（`adt.js run` 能跑），一次验证多个假设：范围表语义 + 真实数据分布 + 状态字典。范式 `scripts/work/ZTEST_ZFIR005_DIAG.abap`。
+- 复核取值逻辑时可写**无选择屏幕的** `$TMP` 诊断报表（`adt.js run` 能跑），一次验证多个假设：范围表语义 + 真实数据分布 + 状态字典。范式 `scripts/ZTEST_ZFIR005_DIAG.abap`。
   *（2026-09-23 已实测复核：裸 `REPORT`、无 `PARAMETERS` / `SELECTION-SCREEN` 的程序，`adt.js run` **正常运行**并回全部 `WRITE` 输出。所以**不要**为了「能跑」去加占位选择屏幕。）*
 - **⭐ `adt.js run` 回 `Error: Program does not exist!`（HTTP 200）时，先原样重试 2~3 次，不要改代码。**
   该短文本是 ADT 控制台侧**偶发**返回，**与程序是否存在 / 是否激活无关**：实测同一系统同一 client，
@@ -870,7 +870,7 @@ PERFORM assert_eq USING 1 '返回类型应为 S' gv_e gv_a.
   这是**单次观测 + 多变量同改**造成的错误归因，隔日复查即被推翻。**排除性归因必须一次只动一个变量，且要能稳定复现。**
 - **`fieldcat-fieldname` 写错不报激活错、运行期才炸**：本轮把 `ZFDJWJ` 写成 `ZFKDJWJ` 之外的拼法（与 `ty_alv` 组件不一致），激活一路通过，ALV 一渲染就找不到列。**推源码前先本地校验**：把 `frm_build_fcat` 里所有 `fieldname = 'XXX'` 抽出来，与 `ty_alv` 的组件名列表取差集，同时查重、查 `TEXT-Tnn` 是否连续。用 Python 正则扫一遍只要几秒。
 
-- **`yyyy.mm` 期间 → 时间戳区间的换算走字符拼接，别做数值运算**：`ZSPTIM` 是 `DEC(15)` 存 `YYYYMMDDHHMMSS`，用 `CONCATENATE lv_gjahr lv_monat '00000000' INTO lv_low.` / `'99999999' INTO lv_high.` 构区间边界，避免 15 位大数的舍入/溢出。跨年回绕（如 11 月 ~ 次年 2 月）要**拆成多段 range 追加**，不能只给一个区间。换算正确性用 `$TMP` 探针验证（范式 `scripts/work/ZTEST_ZFID001A_CHK.abap`，覆盖单月 / 全年 / 跨年回绕三类用例）。
+- **`yyyy.mm` 期间 → 时间戳区间的换算走字符拼接，别做数值运算**：`ZSPTIM` 是 `DEC(15)` 存 `YYYYMMDDHHMMSS`，用 `CONCATENATE lv_gjahr lv_monat '00000000' INTO lv_low.` / `'99999999' INTO lv_high.` 构区间边界，避免 15 位大数的舍入/溢出。跨年回绕（如 11 月 ~ 次年 2 月）要**拆成多段 range 追加**，不能只给一个区间。换算正确性用 `$TMP` 探针验证（范式 `scripts/ZTEST_ZFID001A_CHK.abap`，覆盖单月 / 全年 / 跨年回绕三类用例）。
 
 ### 8.0 ★ 探针设计：断言要判「可判定」，别把数据面缺失报成 FAIL
 
@@ -976,16 +976,16 @@ Error in ABAP statement while processing an internal table. (Message 20260920150
 本例 `ZFID003`：集团 100 跑出 `工厂 1000 未在 T001K 维护…`，而集团 300 的 `T001K` 同样没有工厂 1000
 （`SELECT bwkey, bukrs FROM t001k` 只有 0001/0003/5000/5099）却回了**空短文本** —— 说明它在别处先炸了。此时必须坐实。
 
-**做法（推荐，一次搞定）**：`scripts/work/gen_e2e_harness.js` —— 把生产源码整份复制成 `$TMP` 新程序，**只做三处外科手术**：
+**做法（推荐，一次搞定）**：`scripts/gen_e2e_harness.js` —— 把生产源码整份复制成 `$TMP` 新程序，**只做三处外科手术**：
 
 ```bash
-HARNESS_JSON=scripts/work/harness/ZFID003.json node scripts/work/gen_e2e_harness.js --push
-SAP_ENV_FILE=/tmp/sap300.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js run ZTEST_ZFID003_E2E
+HARNESS_JSON=scripts/harness/ZFID003.json node scripts/gen_e2e_harness.js --push
+SAP_ENV_FILE=/tmp/sap300.env SAP_CLIENT_OVERRIDE=300 node scripts/adt.js run ZTEST_ZFID003_E2E
 ```
 
 1. 改 `REPORT` 程序名；2. 改选择屏幕默认值（默认工厂往往不是有测试数据的工厂）；3. 把最后那行
 `PERFORM frm_show_alv.` 换成自动追加的 `frm_e2e_dump`（用 `WRITE` 打印取数/汇总/字段目录/布局结果，并**反向再跑一次另一条视图分支**）。
-配置见 `scripts/work/harness/<PROG>.json`（`replace` 是字符串替换表，`dumpForm` 是追加的 FORM 源码）。
+配置见 `scripts/harness/<PROG>.json`（`replace` 是字符串替换表，`dumpForm` 是追加的 FORM 源码）。
 
 **结论判读**：`frm_e2e_dump` 能跑完 = `frm_init_period` → 取数 → 汇总 → `frm_build_fcat` → `frm_layout` **全程无转储**，
 即「500 是 ALV 限制」成立；若它自己 500，就是真缺陷，且已缩小到那条链路。
@@ -995,7 +995,7 @@ SAP_ENV_FILE=/tmp/sap300.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js ru
 - **新建 $TMP 程序的推送顺序**：先把源码推上去（程序对象才存在），**否则推文本元素报
   `Resource REPT ZTEST_XXX does not exist`（primer GET 404）**。本系统实测 `$TMP` 程序即使文本符号还没建，
   源码激活也会回 `final version => active`；稳妥起见仍按「推源码 → 推文本元素 → 再推一次源码」三步走。
-- `gen_e2e_harness.js` 会顺带把 `scripts/work/textelements/<原程序>.json` 复制成新程序名的 JSON
+- `gen_e2e_harness.js` 会顺带把 `scripts/textelements/<原程序>.json` 复制成新程序名的 JSON
   （`teSource` 字段），不然 `TEXT-nnn` 引用在新程序里没有符号池。
 - **原程序没有独立文本元素对象时**（`teSource` 留空，如 `ZFIB001`）：把 `TEXT-nnn` 引用在
   `replace` 里**内联成字面量**（`|{ TEXT-001 }-{ sy-datum }|` → `|E2E-{ sy-datum }|`），
@@ -1005,7 +1005,7 @@ SAP_ENV_FILE=/tmp/sap300.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js ru
   `lvc_t_fcat` 手写列名 + `cl_alv_table_create=>create_dynamic_table` 建表，
   再用 `ASSIGN COMPONENT` 按列名填值。列名必须与接口结构字段名一致
   （程序用 `MOVE-CORRESPONDING <fs_data> TO ls_item` 取值）。
-  实测 `ZFIB001`：`scripts/work/harness/ZFIB001.json` → `ZTEST_ZFIB001_E2E`。
+  实测 `ZFIB001`：`scripts/harness/ZFIB001.json` → `ZTEST_ZFIB001_E2E`。
 
 ### 8.2 ★ `SY-TABIX` 会被 `READ TABLE` 改写 —— 循环里记行号必须第一句就取
 
@@ -1048,7 +1048,7 @@ ENDLOOP.
 
 ## 9. 测试报告骨架
 
-`scripts/work/ZZTEST_ISP002_测试报告.md` 是范式，章节：元信息表 → 接口契约（签名/参数/凭证行规则）→ 测试主数据 → 用例与结果表 → 关键用例证据（凭证行明细 + 底表快照）→ 本轮定位并解决的问题（现象 / 排查过程 / 结论 / 处置）→ 遗留事项（责任方）→ 结论。
+`scripts/ZZTEST_ISP002_测试报告.md` 是范式，章节：元信息表 → 接口契约（签名/参数/凭证行规则）→ 测试主数据 → 用例与结果表 → 关键用例证据（凭证行明细 + 底表快照）→ 本轮定位并解决的问题（现象 / 排查过程 / 结论 / 处置）→ 遗留事项（责任方）→ 结论。
 
 ## 10. 生产订单 TECO / 状态操作：ABAP 侧手法
 
@@ -1158,7 +1158,7 @@ SORT lt_jest BY objnr.
 | `The data type of the component "AAA" of "LT_X" is not compatible with the data type of "BBB"` | **部分列 `SELECT … INTO TABLE @lt_x` 按「位置」赋值**：`lt_x` 用了整行表类型却只 SELECT 少数列，值落进结构**前 N 个字段**。→ 要么 `SELECT *`（配整行类型），要么自建「列序 = SELECT 列序」的窄结构（§8 / §13.3）。**类型恰好兼容时还静默不报**，事后取值才发现。 |
 | `"UP" is not allowed here. "." is expected.` | `UP TO n ROWS` **必须紧贴 `INTO TABLE @lt` 之后**，写在 `INTO` 前面即报此错 |
 
-排错手法：只报一条消息时用 `SRC_NAME=ZXXX node scripts/work/act_dump_prog.js plain` 打原始
+排错手法：只报一条消息时用 `SRC_NAME=ZXXX node scripts/act_dump_prog.js plain` 打原始
 `chkl:messages`（带 `href="#start=行,列"`），**注意脚本读的是 `SRC_NAME` 环境变量，不是 `PROG`**，
 传错会静默去激活默认的 ZFIR005。
 
@@ -1187,7 +1187,7 @@ CALL FUNCTION 'ZSAP_ISP001' IMPORTING es_return = ls_ret TABLES it_item = lt_ite
 `Resource controller does not support method PUT`（tables 资源不收结构）。
 改结构字段用 `UpdateStructure {structure_name, ddl_code, transport_request, activate}`，步骤
 `lock→check_new_code→update→unlock→check_inactive→activate`，返回 `activated:true` 才算成功。
-范式脚本：`scripts/work/upd_zsfii006_out_v11.js`（`GetStructure` 取 DDL → 锚点替换 → 回推 → `dd03l` 复核）。
+范式脚本：`scripts/upd_zsfii006_out_v11.js`（`GetStructure` 取 DDL → 锚点替换 → 回推 → `dd03l` 复核）。
 
 **结构被 FM 引用时**：AF 激活 FM 会连带生效（`push_fm_source.js` 走完即可）；
 `ActivateFunctionGroup` / `ActivateFunctionModule` 在对象已 active 时返回

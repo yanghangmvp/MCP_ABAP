@@ -1,8 +1,8 @@
-\---  
-name: sap-tcode-create  
-description: 通过 ADT 通道批量创建 SAP 事务码（TCODE）的完整方法——ADT 本身没有事务码资源，必须写 $TMP 报表调用 SE93 宿主函数组 SAPLSEUK 的标准 API \`RPY_TRANSACTION_INSERT\`，其中 transaction_type 必须用类型池 STSTC 的常量 \`ststc_c_type_report\`（不要去猜常量值）。含参数全表、S/4 OPEN SQL 的 INTO 硬要求、TCODE 落地后的四表校验法，以及「ADT 环境下 BDC 无法驱动选择屏幕」这一验证陷阱。当需要给新程序配 TCODE、批量建事务码、或验证 TCODE 是否真正可用时加载。  
-agent_created: true  
-\---
+---
+name: sap-tcode-create
+description: 通过 ADT 通道批量创建 SAP 事务码（TCODE）的完整方法——ADT 本身没有事务码资源，必须写 $TMP 报表调用 SE93 宿主函数组 SAPLSEUK 的标准 API `RPY_TRANSACTION_INSERT`，其中 transaction_type 必须用类型池 STSTC 的常量 `ststc_c_type_report`（不要去猜常量值）。含参数全表、S/4 OPEN SQL 的 INTO 硬要求、TCODE 落地后的四表校验法，以及「ADT 环境下 BDC 无法驱动选择屏幕」这一验证陷阱。当需要给新程序配 TCODE、批量建事务码、或验证 TCODE 是否真正可用时加载。
+agent_created: true
+---
 
 # SAP 事务码（TCODE）创建（ADT 通道）
 
@@ -153,8 +153,8 @@ ENDLOOP.
 
 执行脚本与程序：
 
-- 创建程序 `scripts/work/ZTEST_TCODE_CREATE.abap`（$TMP，不传输）
-- 验证程序 `scripts/work/ZTEST_ZFID001_BTN.abap`
+- 创建程序 `scripts/ZTEST_TCODE_CREATE.abap`（$TMP，不传输）
+- 验证程序 `scripts/ZTEST_ZFID001_BTN.abap`
 
 ### 关于 `RS_TRANSACTION_ADD`
 

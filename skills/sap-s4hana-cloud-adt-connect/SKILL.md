@@ -1,6 +1,6 @@
 ---
 name: sap-s4hana-cloud-adt-connect
-description: 把 ADT / ADT-MCP 接到 SAP S/4HANA Cloud Public Edition（公有云）的完整落地流程。含已实测跑通的认证链路——浏览器 SSO(SAML→IAS) → reentrance ticket → HTTP 安全会话，票据用 MYSAPSSO2 头打到 -api 域名，会话 Cookie 可复用；以及 UI 域名/-api 域名分工、用响应特征反推认证配置、Development Tenant(080) 与 Customizing Tenant(100) 的选择、@mcp-abap-adt/core 只实现 basic/jwt 因而要用本地注入代理接入。另含公有云写对象的坑：CreateClass 报 500 但对象已建、泄漏入队锁（EU510 / ExceptionResourceNoAccess）、用 deletion/check 读 lockUser、ADT 的 UNLOCK 对错句柄静默返回 200、exposition 没有 write 分组、云上没有经典 REPORT 只能用 IF_OO_ADT_CLASSRUN。当需要连 S/4HANA Cloud、Partner Demo/TDD 环境、判断某云租户能不能被 ADT 连、往云上建/改 ABAP 对象、或排查云环境 401/403/授权/对象被锁时加载。
+description: 把 ADT / ADT-MCP 接到 SAP S/4HANA Cloud Public Edition 的落地流程。含实测跑通的认证链路：浏览器 SSO(SAML→IAS) → reentrance ticket → HTTP 安全会话，票据用 MYSAPSSO2 头打到 -api 域名，会话 Cookie 可复用；UI 域名与 -api 域名分工、用响应特征反推认证配置、Development Tenant(080) 与 Customizing(100) 的选择、core 只实现 basic/jwt 因而需本地注入代理接入。另含公有云写对象的坑：CreateClass 报 500 但对象已建、泄漏入队锁（EU510）、用 deletion/check 读 lockUser、UNLOCK 对错句柄静默返回 200、云上没有经典 REPORT 只能用 IF_OO_ADT_CLASSRUN。当需要连 S/4HANA Cloud 或 Partner Demo/TDD 环境、判断某云租户能否被 ADT 连、往云上建改 ABAP 对象、或排查云环境 401/403/授权/对象被锁时加载。
 agent_created: true
 ---
 
