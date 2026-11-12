@@ -23,7 +23,7 @@ cp -r skills/sap-* ~/.workbuddy/skills/
 
 | 技能 | 什么时候用 | 体量 |
 |---|---|---|
-| [sap-abap-bapi-usage](sap-abap-bapi-usage/SKILL.md) | ★ **调 BAPI 之前看这个**。**索引型技能**：SKILL.md 只有查找表，正文拆在 7 个按域分册里（通用规范 / 静默失效 / 语言格式 / FI / PP / SD / BDC） | 140 行索引 + 1252 行分册 |
+| [sap-abap-bapi-usage](sap-abap-bapi-usage/SKILL.md) | ★ **调 BAPI 之前看这个**。**索引型技能**：一个 BAPI 一个文件，SKILL.md 只有查找表 | 133 行索引 + 1422 行分册 |
 | [sap-abap-project-ops](sap-abap-project-ops/SKILL.md) | ★ **新项目先看这个**。项目作业总纲**模板**：环境与集团切换、速查命令、六铁律、项目硬性约定、接口范式、对象清单骨架、交付脚本约定 | 627 行 |
 | [sap-abap-pitfalls](sap-abap-pitfalls/SKILL.md) | ★ **排障先查这个**。约 120 条「现象 → 根因 → 解法」+ 症状速查表 + 开工 checklist | 285 + 570 行 |
 | [sap-abap-prog-push-run](sap-abap-prog-push-run/SKILL.md) | 报表推送 / 激活 / 无头运行 / 取回结果 / 出测试报告的全流程；500 根因定位、集团切换、嵌套结果集 | 1119 行 |
@@ -36,28 +36,46 @@ cp -r skills/sap-* ~/.workbuddy/skills/
 | [sap-export-column-mapping](sap-export-column-mapping/SKILL.md) | 判定自建导出 Excel 的列 ↔ 源码字段映射（比值对撞法，不按标签猜） | 705 行 |
 | [sap-s4hana-cloud-adt-connect](sap-s4hana-cloud-adt-connect/SKILL.md) | 把 ADT 接到 S/4HANA Cloud 公有云：SSO → reentrance ticket → 复用会话；云上写对象的坑 | 295 行 |
 
-## 结构说明：BAPI 为什么是「一个索引 + 七个分册」
+## 结构说明：BAPI 为什么是「一个文件一件事」
 
-BAPI 经验原来散在四处：`pitfalls` 的「返 S 但值没变」、`prog-push-run` 的会话语言与生产订单选型、`project-ops` 的接口落位约定、SD 订单技能的参数表。同一个坑（如 `EXTENSIONIN` 标识字段必须是 `CHAR1`）在三个文件里各写一遍——改一处漏两处。
-
-现在收成一个入口，正文按域分册：
+BAPI 经验会一直长——每个项目都会用到新的 BAPI。所以结构必须满足一个条件：**新增不碰旧的**。
 
 ```
 sap-abap-bapi-usage/
-├── SKILL.md                      140 行，只有查找表（按场景 / 按接口名 / 按症状）
+├── SKILL.md                    133 行，只有查找表（按 BAPI 名 / 按任务 / 按症状）
 └── references/
-    ├── 00-通用调用规范.md          任何 BAPI 都适用
-    ├── 10-静默失效清单.md          16 条「返 S 但值没变」
-    ├── 20-语言与数据格式.md        会话语言、ALPHA/MATNR、金额日期、时间戳
-    ├── 30-FI-会计凭证.md           过账/冲销/改凭证/票据/双币/分片
-    ├── 40-PP-生产订单.md           TECO/取消TECO/用户状态
-    ├── 50-SD-销售订单.md           参数全表/EXTENSIONIN/计划行/参考单据/退货单
-    └── 90-BDC兜底.md               确认无标准接口时的最后一段
+    ├── _通用调用规范.md          ┐
+    ├── _静默失效清单.md          ├ 通用三册：任何 BAPI 都适用
+    ├── _语言与数据格式.md        ┘
+    ├── _模板.md                 新增时照抄
+    ├── bapi-acc-document-post.md           过账
+    ├── bapi-acc-document-rev-post.md       冲销
+    ├── fi-document-change.md               改已过账凭证
+    ├── posting-interface-fb01.md           票据类 UMSKZ
+    ├── bapi-prodord-complete-tech.md       TECO
+    ├── prodord-teco-reset-bdc.md           取消 TECO（只能 BDC）
+    ├── bapi-prodord-user-status.md         用户状态
+    ├── sd-salesdocument-create.md          建单
+    ├── sd-salesdocument-change.md          变更
+    ├── sd-extensionin.md                   增强字段
+    ├── sd-schedule-line-qty.md             计划行与数量
+    ├── sd-long-text.md                     长文本
+    ├── sd-reference-doc-return.md          参考单据与退货
+    └── bdc-fallback.md                     BDC 兜底
 ```
 
-**为什么这么切**：SKILL.md 只有 140 行，加载成本低到可以每次调 BAPI 都带着；具体分册按需读，不用为了查一个 SD 参数把 FI 的内容也读一遍。
+**新增一个 BAPI 的成本**：
 
-**扩展方式**：新踩的坑按类型归位（通用进 `00`、静默失效进 `10`、格式进 `20`、域内进对应分册），新业务域建 `60-MM-*.md` 这类新册。新增后必须回到 SKILL.md 的「分册清单 / 接口名表 / 症状表」各登记一行——只加分册不登记，下次没人找得到。
+```bash
+cd references && cp _模板.md bapi-goodsmvt-create.md   # 填模板
+# 然后 SKILL.md 的接口名表加一行，完事
+```
+
+不改任何已有文件，不会冲突，不用判断「该塞进哪个大册」。
+
+**为什么切成这么细**：原来 SD 一个册 737 行，查「计划行为什么数量是 0」要翻半天无关内容；现在直接进 `sd-schedule-line-qty.md`。一个文件只讲一件事，超过 250 行就该再拆。
+
+**文件名规则**：BAPI/FM 全名小写、下划线转连字符（`BAPI_ACC_DOCUMENT_POST` → `bapi-acc-document-post.md`）；跨多个 BAPI 的专题用 `<域>-<主题>`（`sd-extensionin.md`）；通用规则用 `_` 前缀。
 
 其余技能里原来的 BAPI 段落已删除，只留一行指路。查一个坑只有一条路径，不会读到过期版本。
 
@@ -80,4 +98,4 @@ sap-abap-bapi-usage/
 
 ## 补一条
 
-坑位这种东西，写在别人文档里是知识，写在自己项目里才是资产。每个技能末尾都留了回流入口：本轮新踩的坑，按「现象 + 根因 + 解法」一句话补进对应分节即可。`sap-abap-pitfalls/references/casebook.md` 就是这么长到 120 条的。
+坑位这种东西，写在别人文档里是知识，写在自己项目里才是资产。每个 BAPI 文件末尾都有「坑」和「对账点」两节，本轮新踩的坑按「现象 → 根因 → 解法」一行补进去即可。`sap-abap-pitfalls/references/casebook.md` 就是这么长到 120 条的。

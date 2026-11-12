@@ -93,7 +93,7 @@ agent_created: true
 
 ### 3.2 BAPI / 标准函数「返 S 但不报错、值没变」
 
-**整节已迁到 `sap-abap-bapi-usage` 分册 `10-静默失效清单`**（含 x 结构成对、标识字段 `CHAR1`、`VALUEPART1` 240 分块、`TVEPZ` 数量双通道、`OBJ_KEY` 布局、`BSEG` 999 行、双币 `CURRENCYAMOUNT`、`UMSKZ` 无字段、`DELETE_TEXT` 抛 `NOT_FOUND`、`READ_TEXT` 类型冲突等 16 条）。调 BAPI 或标准函数时加载那个技能。
+**整节已迁到 `sap-abap-bapi-usage` → `references/_静默失效清单.md`**（含 x 结构成对、标识字段 `CHAR1`、`VALUEPART1` 240 分块、`TVEPZ` 数量双通道、`OBJ_KEY` 布局、`BSEG` 999 行、双币 `CURRENCYAMOUNT`、`UMSKZ` 无字段、`DELETE_TEXT` 抛 `NOT_FOUND`、`READ_TEXT` 类型冲突等 16 条）。调 BAPI 或标准函数时加载那个技能。
 
 ### 3.3 文本 / 描述 / 列标题变空
 
@@ -202,7 +202,7 @@ agent_created: true
 |---|---|
 | 激活报错但文案与代码对不上 | §2（段序/关键字位置/类型名） |
 | 激活 200、跑起来空/旧 | §1（`activationExecuted`、双版本比对、include active 版） |
-| 返回 S，值没变 | 转 `sap-abap-bapi-usage` 分册 `10-静默失效清单`（x 结构、CHAR1 标识、VALUEPART 分块、TVEPZ） |
+| 返回 S，值没变 | 转 `sap-abap-bapi-usage` → `references/_静默失效清单.md`（x 结构、CHAR1 标识、VALUEPART 分块、TVEPZ） |
 | 数据错位/金额恒空/列错乱 | §3.1（`INTO TABLE` 按位置、APPEND 改 sy-tabix、JOIN 退化） |
 | ALV 列标题空白 / 标签文字为空 | §3.3（匿名类型无 DD03T、文本元素未激活） |
 | 按钮点了没反应 | §5（`POPUP_GET_VALUES` RETURNCODE 写反） |
@@ -271,7 +271,7 @@ agent_created: true
 
 | 技能 | 何时转过去 |
 |---|---|
-| `sap-abap-bapi-usage` | ★ **BAPI 索引**：通用规范 / 静默失效 / 语言格式 / FI / PP / SD / BDC 七个分册 |
+| `sap-abap-bapi-usage` | ★ **BAPI 索引**：一个 BAPI 一个文件，索引表按名 / 按任务 / 按症状三路查 |
 | `sap-abap-project-ops` | 需要 DEV 项目侧的环境/集团/请求号/对象清单/命令速查 |
 | `sap-abap-prog-push-run` | 报表程序的推送、激活、运行、测试报告模板 |
 | `sap-ddic-object-ops` | 域/数据元素/表/结构的建与改操作步骤 |

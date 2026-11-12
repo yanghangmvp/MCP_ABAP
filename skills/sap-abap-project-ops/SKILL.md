@@ -515,7 +515,7 @@ SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js r
   ADT 那句 *Names may consist only of A-Z "_" 0-9 (not leading)* 是**提示不是报错**。
 - ★ **`adt.js run` 输出不带 `[adt]` 前缀** ⇒ `grep '^\[adt\]'` 会吃掉全部，改用 `sed -n '/run status/,$p'`。
   SAP 列表宽 ~80 列会**截断长 JSON** ⇒ 探针按 60 字符分段 `WRITE`。
-- ★★ **SD 增强字段 / 数量 / 参考单据的坑不在本文件** —— 统一见 `sap-abap-bapi-usage`：SD 参数全表在其分册 `50-SD-销售订单`（`EXTENSIONIN` 四条硬约束、`TVEPZ` 数量双通道、参考单据三件套、退货单 `Z011`），通用规则见分册 `00-通用调用规范`。本项目只记三条口径：
+- ★★ **SD 增强字段 / 数量 / 参考单据的坑不在本文件** —— 统一见 `sap-abap-bapi-usage`：增强字段见 `references/sd-extensionin.md`、数量双通道见 `references/sd-schedule-line-qty.md`、参考单据与退货单见 `references/sd-reference-doc-return.md`，通用规则见 `references/_通用调用规范.md`。本项目只记三条口径：
   ① 入参复用 `ZBPM_ISP014_HEAD_S`，底层 `SD_SALESDOCUMENT_CREATE` / `_CHANGE`，增强字段走 `EXTENSIONIN`（`ZSBAPE_*` → `VBAKKOZ`/`VBAPKOZ` append，四段缺一不可），**已无直写底表**；
   ② 行项目参考单据必须补 `REF_DOC_CA`（取被参考单据的 `VBAK-VBTYP`），退货单必需；
   ③ 计划行数量校验按 `TVEPZ` 判据豁免无计划行的项目类别（`Z014`/`Z015`）。
@@ -614,7 +614,7 @@ SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js r
 
 | 技能 | 覆盖内容 |
 |---|---|
-| `sap-abap-bapi-usage` | ★ **BAPI 索引**（七个分册）：通用规范、静默失效、语言格式、FI/PP/SD/BDC |
+| `sap-abap-bapi-usage` | ★ **BAPI 索引**：一个 BAPI 一个文件，按名 / 按任务 / 按症状三路查 |
 | `sap-abap-pitfalls` | ★ **踩坑与解法库（跨项目通用）**：约 120 条「现象→根因→解法」，含静默失效清单、假锁/假成功判定、ST22 排查手法。排障先查它 |
 | `sap-abap-prog-push-run` | 报表推送/激活/运行/测试报告、集团切换、500 根因定位、嵌套结果集 |
 | `sap-ddic-object-ops` | 域/数据元素/表/结构的建与改、MASTERLANG、代理与假锁 |

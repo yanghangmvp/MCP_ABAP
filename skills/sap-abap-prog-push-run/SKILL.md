@@ -139,7 +139,7 @@ FM 常把 `BAPIRET2` 拼成 `/msg1/msg2/…` 返回，信息量不足。做法�
 
 ## 4. 细节备忘
 
-> 金额/日期字段口径（`AMT_DOCCUR` 传字符串、`PSTNG_DATE`、ALPHA/MATNR）见 `sap-abap-bapi-usage` 分册 `20-语言与数据格式`。
+> 金额/日期字段口径（`AMT_DOCCUR` 传字符串、`PSTNG_DATE`、ALPHA/MATNR）见 `sap-abap-bapi-usage` → `references/_语言与数据格式.md`。
 
 - `ACDOCA-HSL` 为**带符号**金额（借正贷负），校验借贷平衡时要对贷方取 `abs( )`，否则平衡凭证会被误判为不平。
 - 科目/业务伙伴号在 `SKB1` / `LFB1` 里是 **10 位补零**存储：查 `100001` 要写成 `0000100001`，或直接用 `LIKE '%100001%'`。
@@ -524,7 +524,7 @@ node scripts/call-adt-tool.js UpdateMessage \
 
 ### 6.4 BAPI / 主数据文本按「会话语言」读取
 
-`SET LOCALE LANGUAGE` 与 `sy-langu` 赋值都改不动它，唯一入口是请求头 `sap-language`。根因、症状与对策见 `sap-abap-bapi-usage` 分册 `20-语言与数据格式`；`T100` 消息文本的同源问题见本节 6.3。
+`SET LOCALE LANGUAGE` 与 `sy-langu` 赋值都改不动它，唯一入口是请求头 `sap-language`。根因、症状与对策见 `sap-abap-bapi-usage` → `references/_语言与数据格式.md`；`T100` 消息文本的同源问题见本节 6.3。
 
 ## 7. 给 ALV 加自定义按钮：S/4HANA 下 function ALV 的路已断
 
@@ -970,11 +970,11 @@ ENDLOOP.
 
 ## 10. 生产订单 TECO / 状态操作：ABAP 侧手法
 
-> BAPI 选型（`BAPI_PRODORD_COMPLETE_TECH` / `SETUSERSTATUS` / 无 TECO Reset 只能用 BDC）见 `sap-abap-bapi-usage` 分册 `40-PP-生产订单`。本节只讲报表里怎么组织状态判定与取数。
+> BAPI 选型（`BAPI_PRODORD_COMPLETE_TECH` / `SETUSERSTATUS` / 无 TECO Reset 只能用 BDC）见 `sap-abap-bapi-usage` → `references/bapi-prodord-complete-tech.md`。本节只讲报表里怎么组织状态判定与取数。
 
 ### 10.1 批量技术完成 → `BAPI_PRODORD_COMPLETE_TECH`
 
-抬头级技术完成有专用 BAPI，不要用 `BAPI_ALM_ORDER_MAINTAIN` + `it_methods`。签名、判错与「没有技术完成日期入参」的绕法见 `sap-abap-bapi-usage` 分册 `40-PP-生产订单`。
+抬头级技术完成有专用 BAPI，不要用 `BAPI_ALM_ORDER_MAINTAIN` + `it_methods`。签名、判错与「没有技术完成日期入参」的绕法见 `sap-abap-bapi-usage` → `references/bapi-prodord-complete-tech.md`。
 
 ### 10.2 取消技术完成 → **没有标准 BAPI**，只能 BDC 调 CO02
 
@@ -1011,7 +1011,7 @@ CALL TRANSACTION 'CO02' USING gt_bdcdata
 
 ### 10.3 用户状态（财务关闭标识等）用 `BAPI_PRODORD_SETUSERSTATUS`
 
-`SETUSERSTATUS` / `REVOKEUSERSTATUS` 是 PP 官方接口，`STATUS_CHANGE_EXTERN` 亦可（`user_status` 传状态码、`set_chgkz = 'X'`）。细节见 `sap-abap-bapi-usage` 分册 `40-PP-生产订单`。
+`SETUSERSTATUS` / `REVOKEUSERSTATUS` 是 PP 官方接口，`STATUS_CHANGE_EXTERN` 亦可（`user_status` 传状态码、`set_chgkz = 'X'`）。细节见 `sap-abap-bapi-usage` → `references/bapi-prodord-user-status.md`。
 
 ### 10.4 状态判定的结构化写法（强烈推荐）
 
@@ -1060,7 +1060,7 @@ SORT lt_jest BY objnr.
 
 ## 11. 会计凭证过账 / 冲销：走项目封装接口，不要直接调 BAPI
 
-选型结论与理由见 `sap-abap-bapi-usage` 分册 `30-FI-会计凭证`；本项目封装接口（`ZFM_FII001` / `ZFM_FII001_SPLIT` / `ZFM_FII003`）的完整签名、模拟导入、拆分规则、消息处理见 `sap-abap-project-ops` §4 接口范式。
+选型结论与理由见 `sap-abap-bapi-usage` → `references/bapi-acc-document-post.md`；本项目封装接口（`ZFM_FII001` / `ZFM_FII001_SPLIT` / `ZFM_FII003`）的完整签名、模拟导入、拆分规则、消息处理见 `sap-abap-project-ops` §4 接口范式。
 
 ## 12. 激活报错速查（都是实测踩出来的）
 
