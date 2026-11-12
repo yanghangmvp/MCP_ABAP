@@ -13,45 +13,11 @@ agent_created: true
 
 ## 1. ★ 必踩坑：BAPI 按「登录语言」查找主数据文本
 
-**症状**：接口返回 `E`，明细消息为
-
-```
-Missing text for division 10 language EN        （消息 V2 157）
-Error in SALES_ITEM_IN 000010
-Sales document  was not changed
-```
-
-创建与「测试运行」**都失败**，且 `VBAK` 完全不落库。
-
-**根因**：`BAPI_SALESORDER_CREATEFROMDAT2` / `BAPI_SALESORDER_CHANGE` 在确定产品组描述时，按 **登录语言（会话语言）** 读 `TSPAT`。
-本系统 `TSPAT` **只维护了中文（`SPRAS='1'`）文本** —— `TVKOT`（销售组织）、`TVTWT`（分销渠道）都是 `1/D/E` 三语言齐备，**唯独产品组缺英文**。
-
-**关键排除结论（都实测过）**：
-
-| 尝试 | 结果 |
-|---|---|
-| `SET LOCALE LANGUAGE '1'.` | ❌ 无效（`sy-langu` 确实变成 `ZH`，BAPI 仍报 `language EN`） |
-| `sy-langu = '1'.` | ❌ 无效（同上） |
-| ADT 请求带 `sap-language: zh` | ✅ **一次通过** |
-| `SET LOCALE LANGUAGE 'ZH'.` | ❌ 运行期 500 `Key word for accessing the SAP text environment table TCP0C is too long`（语言键必须是 SAP 单字符码，不是 ISO 码） |
-
-⇒ **BAPI 用的是会话/登录语言，不是 `sy-langu`。**
-
-**用法**：
-
-```bash
-# 跑探针/报表时指定会话语言
-SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 SAP_LANGUAGE_OVERRIDE=zh \
-  node scripts/work/adt.js run ZTEST_ISP016_E2E2
-```
-（`scripts/work/adt.js` 已支持 `SAP_LANGUAGE_OVERRIDE`：设值后所有请求带 `sap-language` 头。）
-
-**根治**（属主数据，动之前先问）：请 SD 顾问在 `TSPAT` 补齐相关产品组（`00`、`10`~`18`）的英文文本。补齐后任意语言都能用。
-**前置确认**：先问对接方（BPM / IPAAS）RFC 调用用什么语言 —— 若本来就是中文，无需改主数据。
-
----
+**已迁到 `sap-abap-bapi-usage` §4**（症状 `V2 157 Missing text`、`SET LOCALE LANGUAGE` 无效、唯一入口是请求头 `sap-language`、根治靠补 `TSPAT` 的 EN 文本）。本技能只讲 SD 侧参数与规则。
 
 ## 2. BAPI 选型与调用参数
+
+> 通用规则（`x` 结构成对、标识 `CHAR1`、`VALUEPART` 分块、`&&` 清空、返回消息处理、落库对账）见 `sap-abap-bapi-usage`；本节及以下只写 SD 订单专有内容。
 
 | 场景 | BAPI | 测试运行参数 |
 |---|---|---|

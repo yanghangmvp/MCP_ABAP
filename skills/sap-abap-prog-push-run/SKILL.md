@@ -1,12 +1,16 @@
 ---
 name: sap-abap-prog-push-run
-description: 在 ADT/MCP 通道上把 ABAP 可执行报表（REPORT）推送并激活到 SAP、运行取回结果、再产出测试报告的完整流程。含 PROG 创建/激活报文的 4 处协议细节、按 SAP_ENV_FILE 或 SAP_CLIENT_OVERRIDE 切集团、adt.js run 的适用边界、★「动手前先对齐 `开发模板/` 项目模版」（程序头八字段/事件段/FORM 命名/LVC ALV/文本元素编号的硬指标自检清单，用户两次纠错换来的规矩）、★「带选择屏幕和 ALV 的报表也能无头运行：无 GUI 时 ALV 自动降级成清单输出、网格标题与列标题可核，但 ALV 调用之前有 WRITE 就必 500 Screen output without connection to user；验文本元素必须带 SAP_LANGUAGE_OVERRIDE=zh，否则 ZH-only 文本池读空会误判成文本没推上去」、无头运行返回 HTTP 500 时「用短文本反查运行时错误名（TABLE_INVALID_INDEX / ITAB_ILL_COMPONENT 等）+ 注释二分法」的定位手法、★「短文本为空时用 gen_e2e_harness.js 生成 $TMP E2E 副本，一刀切开『ALV 渲染限制』与『真实转储』」的判定手法、★「FG 内 FORM 形参类型与标准 FM 形参类型不一致（本系统 TDNAME=CHAR16 vs READ_TEXT 的 TDOBNAME=CHAR70）导致编译通过但运行期 500 Type conflict」的根因与两种修法（改 `TYPE tdobname`；或 STXL 直读 + IMPORT FROM INTERNAL TABLE 替代 READ_TEXT）、★「SD BAPI 按登录语言（会话语言）查 SPI/产品组等文本，`SET LOCALE LANGUAGE`/`sy-langu` 均无效，只有 ADT 请求头 `sap-language`（`adt.js` 的 `SAP_LANGUAGE_OVERRIDE`）能改；主数据文本表（`TSPAT` 等）缺 EN 时英文会话必报 `V2 157 Missing text`」的根因与对策、★★「长文本必须先批量取回再内存 IMPORT，禁止在循环里逐条 SELECT」（含 FOR ALL ENTRIES 空表防护、`INTO` 必须放 SELECT 末尾、键表分批、实测 13,400 次往返→1 次）、★「接口返回『行包含在抬头里』的嵌套结果集（参照 `ZBPM_ISP005`：DDIC 结构内嵌 TTYP 组件 + ABAP 按唯一键二分归位）」、SY-TABIX 被 READ TABLE 改写导致 DELETE ... INDEX 0 转储的陷阱、文本元素（TEXT-xxx）推送后必须单独激活（PROG/PX 对象，激活父程序不会连带激活它）的排查方法，以及「用场景表驱动的诊断报表直接调 BAPI 打印 MSGID/MSGNO/V1..V4」这种把模糊报错钉死到根因的排查手法。当需要新建/更新 $TMP 测试报表、跑 SAP 端回归用例、推送函数模块/文本元素、或 SAP 只回一句拼接消息/一个 500 需要定位根因时加载。
+description: 在 ADT/MCP 通道上把 ABAP 可执行报表（REPORT）推送并激活到 SAP、运行取回结果、再产出测试报告的完整流程。含 PROG 创建/激活报文的 4 处协议细节、按 SAP_ENV_FILE 或 SAP_CLIENT_OVERRIDE 切集团、adt.js run 的适用边界、★「动手前先对齐 `开发模板/` 项目模版」（程序头八字段/事件段/FORM 命名/LVC ALV/文本元素编号的硬指标自检清单，用户两次纠错换来的规矩）、★「带选择屏幕和 ALV 的报表也能无头运行：无 GUI 时 ALV 自动降级成清单输出、网格标题与列标题可核，但 ALV 调用之前有 WRITE 就必 500 Screen output without connection to user；验文本元素必须带 SAP_LANGUAGE_OVERRIDE=zh，否则 ZH-only 文本池读空会误判成文本没推上去」、无头运行返回 HTTP 500 时「用短文本反查运行时错误名（TABLE_INVALID_INDEX / ITAB_ILL_COMPONENT 等）+ 注释二分法」的定位手法、★「短文本为空时用 gen_e2e_harness.js 生成 $TMP E2E 副本，一刀切开『ALV 渲染限制』与『真实转储』」的判定手法、★「FG 内 FORM 形参类型与标准 FM 形参类型不一致（本系统 TDNAME=CHAR16 vs READ_TEXT 的 TDOBNAME=CHAR70）导致编译通过但运行期 500 Type conflict」的根因与两种修法（改 `TYPE tdobname`；或 STXL 直读 + IMPORT FROM INTERNAL TABLE 替代 READ_TEXT）、（BAPI 调用相关经验已抽到 `sap-abap-bapi-usage`）、★★「长文本必须先批量取回再内存 IMPORT，禁止在循环里逐条 SELECT」（含 FOR ALL ENTRIES 空表防护、`INTO` 必须放 SELECT 末尾、键表分批、实测 13,400 次往返→1 次）、★「接口返回『行包含在抬头里』的嵌套结果集（参照 `ZBPM_ISP005`：DDIC 结构内嵌 TTYP 组件 + ABAP 按唯一键二分归位）」、SY-TABIX 被 READ TABLE 改写导致 DELETE ... INDEX 0 转储的陷阱、文本元素（TEXT-xxx）推送后必须单独激活（PROG/PX 对象，激活父程序不会连带激活它）的排查方法，以及「用场景表驱动的诊断报表直接调 BAPI 打印 MSGID/MSGNO/V1..V4」这种把模糊报错钉死到根因的排查手法。当需要新建/更新 $TMP 测试报表、跑 SAP 端回归用例、推送函数模块/文本元素、或 SAP 只回一句拼接消息/一个 500 需要定位根因时加载。
 agent_created: true
 ---
 
 # ABAP 报表推送 / 运行 / 测试报告（ADT 通道）
 
 适用项目：示例客户 SAP ERP（`~/ABAP-AI`，系统 DEV）。
+
+> 本技能负责**报表侧**：推送、激活、运行、诊断、测试报告。
+> **BAPI / 标准函数调用**（参数结构、静默失效、按域选型、语言、对账）见 `sap-abap-bapi-usage`；
+> 项目封装接口（`ZFM_FII001`/`FII003`/`FII001_SPLIT`）见 `sap-abap-project-ops` §4。
 
 ## 0. 集团切换（最容易踩）
 
@@ -135,8 +139,8 @@ FM 常把 `BAPIRET2` 拼成 `/msg1/msg2/…` 返回，信息量不足。做法�
 
 ## 4. 细节备忘
 
-- 金额字段：BAPI 的 `AMT_DOCCUR` 等建议直接赋字符串常量（`'1000.00'`），避免 `WRITE … DECIMALS` 带入千分位。
-- `BAPIACHE09` 的过账日期字段是 **`PSTNG_DATE`**（不是 `POSTING_DATE`）。
+> 金额/日期字段口径（`AMT_DOCCUR` 传字符串、`PSTNG_DATE`、ALPHA/MATNR）见 `sap-abap-bapi-usage` §5。
+
 - `ACDOCA-HSL` 为**带符号**金额（借正贷负），校验借贷平衡时要对贷方取 `abs( )`，否则平衡凭证会被误判为不平。
 - 科目/业务伙伴号在 `SKB1` / `LFB1` 里是 **10 位补零**存储：查 `100001` 要写成 `0000100001`，或直接用 `LIKE '%100001%'`。
 - 诊断报表与回归报表都放 `$TMP`、不建请求、不传输，源码同步归档到 `scripts/work/`。
@@ -518,28 +522,9 @@ node scripts/call-adt-tool.js UpdateMessage \
 *"LV_CNT" must be a character-like data object*）→ 拼接含数字的提示一律用字符串模板
 `lv = |通过 { lv_ok } 条|.`。
 
-### 6.4 ★★ SD BAPI 按「登录语言（会话语言）」查主数据文本 —— `SET LOCALE LANGUAGE` 无效
+### 6.4 BAPI / 主数据文本按「会话语言」读取
 
-**症状**：`BAPI_SALESORDER_CREATEFROMDAT2` / `BAPI_SALESORDER_CHANGE` 在 ADT 无头运行下返回
-`E` + **`Missing text for division 10 language EN`（消息 `V2 157`）**，订单创建/修改失败；
-但业务侧用 ZH 登录手工跑却正常。
-
-**根因**：SD 的这套 BAPI 在取**产品组（`SPART`）、销售组织相关的 `TSPAT`/`TVKOV` 等文本**时，
-用的是**会话登录语言**（`cl_abap_context_info` / 内部 `sy-langu`），与运行程序里写的任何东西无关。
-
-- **`SET LOCALE LANGUAGE 'zh'.` / `sy-langu = '1'.` 都改不动它** —— 实测（2026-09-29）在 300 集团 E2E 探针里两种写法都试过，仍然报 EN 缺文本。
-- 改语言的**唯一有效入口是 ADT 请求头的 `sap-language`**（会话级，在 ABAP 代码之前生效）。
-- 本项目 `TSPAT` 只有中文文本（缺 EN）→ 会话 EN 必炸。
-
-**对策**：`adt.js` 加 `SAP_LANGUAGE_OVERRIDE`（读 env 注入 `sap-language` 头），跑 SD 相关探针时带上：
-```bash
-SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 SAP_LANGUAGE_OVERRIDE=zh \
-  node scripts/work/adt.js run ZTEST_ISP016_E2E2
-```
-- **根治方案（若 BPM/IPAAS 侧以英文调用 RFC）**：请 SD 顾问补 `TSPAT`（及其他 SD 文本表）的 EN 文本，
-  否则线上英文会话调用同样会在 `V2 157` 挂掉 —— 这是**主数据缺失**，接口代码无法绕过。
-- 与 §6.3（MSAG `T100` 按语言精确匹配）是**同一类根因**：SAP 的文本读取语言 = 会话语言，不 fallback。
-  已知 §6.3 的 `ZFI_MSG` 008–016 只有 EN，正好和这里互补：**写消息要双语言，建主数据文本同样要双语言**。
+`SET LOCALE LANGUAGE` 与 `sy-langu` 赋值都改不动它，唯一入口是请求头 `sap-language`。根因、症状与对策见 `sap-abap-bapi-usage` §4；`T100` 消息文本的同源问题见本节 6.3。
 
 ## 7. 给 ALV 加自定义按钮：S/4HANA 下 function ALV 的路已断
 
@@ -983,29 +968,13 @@ ENDLOOP.
 
 `scripts/work/ZZTEST_ISP002_测试报告.md` 是范式，章节：元信息表 → 接口契约（签名/参数/凭证行规则）→ 测试主数据 → 用例与结果表 → 关键用例证据（凭证行明细 + 底表快照）→ 本轮定位并解决的问题（现象 / 排查过程 / 结论 / 处置）→ 遗留事项（责任方）→ 结论。
 
-## 10. 生产订单 TECO / 状态操作：BAPI 选型（重要，别走弯路）
+## 10. 生产订单 TECO / 状态操作：ABAP 侧手法
+
+> BAPI 选型（`BAPI_PRODORD_COMPLETE_TECH` / `SETUSERSTATUS` / 无 TECO Reset 只能用 BDC）见 `sap-abap-bapi-usage` §7.2。本节只讲报表里怎么组织状态判定与取数。
 
 ### 10.1 批量技术完成 → `BAPI_PRODORD_COMPLETE_TECH`
 
-**不要用 `BAPI_ALM_ORDER_MAINTAIN` + `it_methods` 方法表**（要手工拼 `refnumber`/`objecttype`/`objectkey`/`it_header`，那是跨对象维护用的）。抬头级技术完成有专用 BAPI（`fupararef` 实测签名）：
-
-```
-ORDERS             T   BAPI_ORDER_KEY      " 字段 ORDER_NUMBER，可多张
-DETAIL_RETURN      T   BAPI_ORDER_RETURN
-RETURN             E   BAPIRET2
-SCOPE_COMPL_TECH   I   BAPI_ORDER_FUNC_CNTRL-SCOPE_COMPL_TECH
-```
-
-```abap
-DATA: lt_order  TYPE TABLE OF bapi_order_key,
-      lt_return TYPE TABLE OF bapi_order_return.
-lt_order = VALUE #( ( order_number = lv_aufnr ) ).
-CALL FUNCTION 'BAPI_PRODORD_COMPLETE_TECH'
-  TABLES orders = lt_order  detail_return = lt_return.
-" 判错：LOOP lt_return WHERE type CA 'AE'；无错再 BAPI_TRANSACTION_COMMIT( wait = 'X' )
-```
-
-**该 BAPI 没有"技术完成日期"入参** —— 想设成指定日期（如期间最后一天）只能在 BAPI 成功后另补 `UPDATE aufk SET idat2 = ...`，或改走 BAdI。直改标准表要评估审计/权限风险。
+抬头级技术完成有专用 BAPI，不要用 `BAPI_ALM_ORDER_MAINTAIN` + `it_methods`。签名、判错与「没有技术完成日期入参」的绕法见 `sap-abap-bapi-usage` §7.2。
 
 ### 10.2 取消技术完成 → **没有标准 BAPI**，只能 BDC 调 CO02
 
@@ -1042,7 +1011,7 @@ CALL TRANSACTION 'CO02' USING gt_bdcdata
 
 ### 10.3 用户状态（财务关闭标识等）用 `BAPI_PRODORD_SETUSERSTATUS`
 
-`BAPI_PRODORD_SETUSERSTATUS` / `BAPI_PRODORD_REVOKEUSERSTATUS` 是 PP 官方接口；`STATUS_CHANGE_EXTERN` 也可用（`user_status` 传状态码如 `E0002`、`set_chgkz = 'X'`）。
+`SETUSERSTATUS` / `REVOKEUSERSTATUS` 是 PP 官方接口，`STATUS_CHANGE_EXTERN` 亦可（`user_status` 传状态码、`set_chgkz = 'X'`）。细节见 `sap-abap-bapi-usage` §7.2。
 
 ### 10.4 状态判定的结构化写法（强烈推荐）
 
@@ -1089,232 +1058,9 @@ SORT lt_jest BY objnr.
   `SET PF-STATUS 'X' EXCLUDING lt_extab`（用 `APPEND c_ucomm_xxx TO lt_extab`）**动态隐藏**另一个动作的功能码。
 - `MESSAGE_TEXT_BUILD`（`msgid`/`msgnr`/`msgv1..4` → `message_text_output`）把 BAPI/BDC 消息统一转文本，比 `MESSAGE ID ... INTO` 稳。
 
-## 11. ★ 会计凭证过账走 `ZFM_FII001`、冲销走 `ZFM_FII003`，不要再直接调 BAPI
+## 11. 会计凭证过账 / 冲销：走项目封装接口，不要直接调 BAPI
 
-FICO 付款平台（ZFID001A/B/C/D）与 `ZBPM_ISP003 / ZFM_FII002` 过账全部走**项目封装接口 `ZFM_FII001`**；
-冲销走 **`ZFM_FII003`**（2026-09-20 起）。写新程序时**先确认当前口径**
-（同事在改其他程序时可能刚切过去），别照抄老程序的 BAPI 写法。
-
-```abap
-DATA: ls_req  TYPE zsfii001_req,
-      ls_head TYPE zsfii001_head_in,
-      ls_item TYPE zsfii001_item_in,
-      lt_item TYPE zttfii001_item_in,
-      ls_resp TYPE zsrest_out.
-" HEAD: bukrs/blart/bldat(凭证日期)/budat(过账日期)/monat/usnam/xblnr/waers/bktxt
-"       STATUS 留空 = 直接过账；置 '2' = 走预制凭证
-" ITEM: buzei/bschl/hkont/kunnr/lifnr/umskz/kostl/aufnr/vbel2/zfbdt/wrbtr/sgtxt/zuonr/rstgr
-ls_req-req-head = ls_head.
-ls_req-req-item = lt_item.
-CALL FUNCTION 'ZFM_FII001'
-  EXPORTING i_req  = ls_req
-  IMPORTING o_resp = ls_resp.
-" ★ 判定：ls_resp-msgty = 'S' **且** ls_resp-sapnum 非空才算过账成功；
-"   sapnum 就是会计凭证号。接口内部自己 COMMIT / ROLLBACK 并拼好 msgtx。
-```
-
-**★ 模拟导入：`i_testrun = 'X'`（2026-09-22 新增，`ZFIB001` 用）**
-
-```abap
-CALL FUNCTION 'ZFM_FII001'
-  EXPORTING i_req     = ls_req
-            i_testrun = 'X'        " 只校验、不落库
-  IMPORTING o_resp    = ls_resp.
-```
-
-- 非票据路径改调 **`BAPI_ACC_DOCUMENT_CHECK`**（与 POST 参数结构完全兼容，仅少 `obj_key` 出参，
-  所以字段组装 / `EXTENSION2` 增强逻辑全复用），**不 COMMIT 也不 ROLLBACK**；
-  通过时 `msgtx = ZFI_MSG-017「模拟通过，未生成会计凭证」`、`sapnum` 留空。
-- **票据（汇票）行**（`UMSKZ = W/X/Y` → `lv_bdc='X'`）本来是绕 BAPI 走 BDC 的，
-  而 `POSTING_INTERFACE_START` 的 `I_UPDATE` 值域实测只有 **`S/A/L`**
-  （源码 `IF UPDATE CN 'SAL' → UPDATE_INVALID`）—— **没有"不更新数据库"档位**，
-  故模拟时**直接回 `E` + `ZFI_MSG-018`，不伪造成功**。
-- 参数可选，老调用方（`ZBPM_ISP002` 等）不传即维持原行为。
-- **不要在调用方"跑完再 `ROLLBACK`"** —— 接口内部自己 `BAPI_TRANSACTION_COMMIT`，外层回滚无效。
-- **模拟结果不能标成"已处理"**：若调用方用图标驱动"待处理行"判定（`ZFIB001` 的
-  `frm_before_import` 判据是 `lv_id <> icon_led_green`），模拟必须回**黄灯 `icon_led_yellow`**、
-  绿灯只留给"已落库"。否则用户「先模拟、再正式导入」时正式导入命中 0 行
-  —— 与 `ZFIB003` 缺陷 D-07 同一类，已验证过两次。
-- 落地实例：`ZFIB001` 的 `ZTEST`（模拟）/`ZLOAD`（正式）按钮，
-  测试报告 `测试报告/ZFIB001_会计凭证批导_模拟导入_测试报告_20260922.md`。
-
-**★ 模拟模式验证「拆分创建」`ZFM_FII001_SPLIT`（2026-09-22 交付，同函数组 `ZFG_FI001`）**
-
-`BSEG-BUZEI` 是 `NUMC(3)`，单张 FI 凭证 999 行是**物理上限**（S/4HANA 2023 也一样），
-`ZFM_FII001_SPLIT` 把 >999 行拆成多张：入参 `i_req / i_testrun / i_trans_hkont`，
-出参 `o_resp / et_doc(ZTTFII001_SPLIT)`；≤999 行直接委托 `ZFM_FII001`。
-
-```abap
-CALL FUNCTION 'ZFM_FII001_SPLIT'
-  EXPORTING i_req = ls_req  i_testrun = 'X'  i_trans_hkont = '2202999900'
-  IMPORTING o_resp = ls_resp  et_doc = lt_doc.   " et_doc 每张：ITEM_FROM/TO/CNT/DIFF_AMT/DIFF_BSCHL
-```
-
-- **每张最多 998 行明细 + 1 行轧差行 = 999**；片内 `BUZEI` 重新编号。
-- 汇总按 **`TBSL-SHKZG='H'` 取负**（不要硬编码 `50/31/11/39/19` 列表）；
-  **Σ>0 → 轧差行贷方 `50`，Σ<0 → 借方 `40`**；金额 `= -Σ`（BAPI 符号：借正贷负）。
-- **切片阈值取 998，不是「剩余 > 999」**：1997 行按后者会产出 1000 行的张（BUZEI 溢出）。
-  边界用例必测 **1997**（→998+998+1）、1000（→998+2）、1998（→998+998+2）。
-- **切片上限必须按场景区分**：拆分场景 `998`（给轧差行留一行），**不拆分（≤999 行）场景 `999`**。
-  曾因无条件按 998 截断，把 **999 行**的单据切成 998+1 两张 —— 第 2 张只有单边 1 行且无轧差行，
-  报 `Accounting Interface: Balance in transaction currency`。**边界用例必须包含 999 与 1997**。
-- **`i_trans_hkont` 必须是资产负债类（非成本相关）科目**，否则轧差行缺成本对象，报
-  `Account xxx requires an account assignment relevant to cost accounting`。
-- 断言集：张数 = `(行数+997) DIV 998`、每张明细 ≤998、ΣDIFF_AMT = 0、末张覆盖到末行、方向与符号一致。
-
-**★ 探针必带「基线对照」（本次靠它切开 2 次环境误判）**
-
-同一抬头/科目/期间，先调**原始** `ZFM_FII001` 跑 5 行：
-
-- 基线返回 `S` ⇒ 环境正常，新逻辑的失败才算缺陷；
-- 基线同样报错 ⇒ 问题在抬头/科目/期间/字段状态组，**别改新代码**。
-
-FI 侧最常见的两类环境坑（报错文本有误导性）：
-科目字段状态组要求 `RSTGR` 付款原因代码（`Field Reason Cde is a required field for G/L account …`，
-该字段只经 `ZSFI_BSEG` 扩展给 BADI，标准检查阶段看不到）；
-成本要素/P&L 科目必须有成本对象。挑测试科目时优先字段状态组宽松的（公司 5000 下资产/负债类多为 `Z001`）。
-
-**★ `MESSAGE ... WITH` 对整条文本有长度上限（实测约 70 字符）——长错误会被静默截断**
-
-症状：只能看到 `Field Reas...` 这种半截串，后半段凭空消失。**不要用 `WITH` 传长文本**：
-
-```abap
-MESSAGE e022(zfi_msg) INTO o_resp-msgtx WITH lv_seq space.   " 只用它拼短前缀
-IF lv_msg IS NOT INITIAL.
-  o_resp-msgtx = |{ o_resp-msgtx }{ lv_msg }|.              " BAPI 原文手工接上（≤220 字符）
-ENDIF.
-```
-
-另：`WRITE` 列表输出也会截行，诊断时按 `msgtx+0(55) / +55(55) / +110(55) / +165(55)` 分段打印。
-
-**★ 与「直接调 BAPI」的差别（照抄必错）**
-
-- `ZFM_FII001` **按 BSCHL 查 TBSL 反推借贷方向**（内部 `ls_item-shkzg = ls_tbsl-shkzg`），
-  **金额一律传正数**。记账码必须给对 —— 给错或给了 TBSL 里没有的码，接口回报「记账码不存在」类错误（zfi_msg 002）。
-- 行项目号字段是 `ZSFII001_ITEM_IN-BUZEI`（NUMC 3），**不是** BAPI 的 `ITEMNO_ACC`。
-- **`BAPIACGL09` 没有 `RSTGR` 字段**；原因代码填 `ZSFII001_ITEM_IN-RSTGR`，接口自动走
-  `EXTENSION2` + 扩展结构 `ZSFI_BSEG` 传入。
-- **★ 冲销也走项目封装接口 `ZFM_FII003`**（2026-09-20 起；`BAPI_ACC_DOCUMENT_REV_POST` 写法已废弃）：
-
-```abap
-DATA: ls_req  TYPE zsfii003_req,
-      ls_resp TYPE zsrest_out.
-ls_req-req-bukrs = <bukrs>.  ls_req-req-belnr = <belnr>.   " 前导零可有可无
-ls_req-req-gjahr = <gjahr>.  ls_req-req-stgrd = <冲销原因>.
-ls_req-req-budat = <冲销日期>.
-CALL FUNCTION 'ZFM_FII003' EXPORTING i_req = ls_req IMPORTING o_resp = ls_resp.
-" ★ 判成败只能看 MSGTY='S'（成功时 MSGTX 也非空！）；ls_resp-sapnum = 冲销凭证号
-" ★ 内部经 CALL TRANSACTION 'FB08' 的 BDC 自行提交，调用方不要再 BAPI_TRANSACTION_COMMIT
-```
-
-  要点：入参**只有 `I_REQ-REQ` 一个子结构**（`ZSFII003_REQ` 顶层的同名字段不被读取）；
-  内部已做「原凭证未冲销(`BKPF-XREVERSAL=''`)」与「来源 RMRP/VBRK 拒冲」校验，调用方不必重复。
-  **易踩**：`ZSREST_OUT-MSGTX` 成功时非空 —— 老程序里「MSGTX 非空 = 失败」的判据必须改成
-  `IF ls_ret-msgty <> 'S'.`（ZFID001C/D 已改）。详见 `FS文档/ZFM_FII003_冲销接口说明_20260920.md`。
-  旧写法（需 `FI_REFERENCE_CREATE` 拼 `REVERSAL-OBJ_KEY_R`、BAPI 的 `OBJ_KEY` 由过账后回填）仅作历史参考。
-
-### 11.1 ★ `ZFM_FII001_SPLIT`：一张逻辑凭证拆成多张后，怎么把「哪一行落在哪一张」传回调用方
-
-`ZFM_FII001_SPLIT` 的 `ET_DOC`（`ZTTFII001_SPLIT`）每张返回
-`SEQ / BUKRS / BELNR / GJAHR / ITEM_FROM / ITEM_TO / ITEM_CNT / DIFF_AMT / DIFF_BSCHL / HKONT`。
-
-**关键结论：按行归属要用「组内行序」，不要用 `ITEM_FROM/ITEM_TO`。**
-
-原因：`ITEM_FROM/ITEM_TO` 是**入参行的 `BUZEI`**，而批导模板里的 `BUZEI` **允许留空或重复**
-（探针把 1000 行全填 `001` 也照样能预览正确归属）。`ZSFII001_ITEM_IN-BUZEI` 实测是 `POSNR_ACC`(NUMC10)、
-装得下 1~1080，**不是** `NUMC3`；但既然来源不保证唯一，就不能拿它当匹配键。
-
-正确做法（`ZFIB001` 2026-09-23 实践）：
-
-```abap
-"调用后：用 ITEM_CNT 依次累加，换算成「组内第几行」的区间
-lv_maxseq = lines( lt_doc ).
-CLEAR lv_idx.
-LOOP AT lt_doc INTO ls_doc.
-  CLEAR gs_split.
-  gs_split-number = lv_number.          "排序号（逻辑凭证）
-  gs_split-seq    = ls_doc-seq.
-  gs_split-maxseq = lv_maxseq.
-  gs_split-belnr  = ls_doc-belnr.
-  IF ls_doc-item_cnt IS NOT INITIAL.
-    CLEAR lv_take.
-    lv_take           = ls_doc-item_cnt.
-    gs_split-idx_from = lv_idx + 1.     "★ 组内第几行，从 1 起
-    gs_split-idx_to   = lv_idx + lv_take.
-    lv_idx            = gs_split-idx_to.
-  ENDIF.
-  APPEND gs_split TO gt_split.
-ENDLOOP.
-```
-
-回写侧要求**入参顺序 = 行序**：建 `ls_req-req-item` 时的 `APPEND` 顺序，与回写 ALV 时遍历
-`<ft_data>` 的顺序必须用**同一套过滤条件**（同一 `READ TABLE gt_temp ... CONTINUE`），否则序号错位。
-
-四个必踩的细节：
-
-1. **`TY_SPLIT-SEQ/MAXSEQ` 用 `TYPE i`**，不要用 `NUMC3` —— 否则字符串模板拼出「本行第 001/002 张」。
-2. **只在该逻辑凭证 `MAXSEQ > 1` 时追加标注**，未拆分的不要动消息列，否则改变既有行为（要做回归断言守住）。
-3. **缓存表必须随 `GT_TEMP` 一起在「导入前检查」里 `CLEAR`**，否则重复点按钮会累积旧区间。
-4. 模拟模式（`i_testrun='X'`）下 `ET_DOC-BELNR` 为空，消息渲染成「…（本行第 1/2 张，未生成凭证号）」。
-
-**落表位置取决在模板有没有列**：`ZFIB001` 上传模板固定 18 列
-（`CHECK/ID/MSG/NUMBER/BUKRS/BLART/BLDAT/BUDAT/MONAT/WAERS/BKTXT/BUZEI/BSCHL/HKONT/WRBTR/KOSTL/LIFNR/MEINS`），
-**没有 `BELNR` 列** → 只能写 `MSG`。若以后要独立列，程序里 `PERFORM frm_convent_data_in USING 'BELNR' ...`
-在列不存在时 `ASSIGN COMPONENT` 失败会静默忽略，可以预先埋着。
-
-**验证方式**：把探针的 1000 行明细分两段（如 1~998 借、999~1000 贷），
-断言「行 1~998 命中第 1/2 张、行 999~1000 命中第 2/2 张、错位 0」；
-并且**故意把全部行的 `BUZEI` 都写成 `001`** —— 这样断言通过就等于证明走的是行序而非 `BUZEI`。
-
-### 11.2 ⭐ 用户报「拆分后第 001 张不平」时的排查套路（2026-09-23 实战，一手结论：先反推输入集合）
-
-**症状**：批导消息列报 `第 001 张凭证创建失败：… 会计接口：以交易货币 880.00- (CNY) 计的余额`，
-用户坚称「改之前是好的」。
-
-**先算，别先读代码。** FI 那条 `Balance in Transaction Currency &1` 里的金额＝**该批的带符号净额**，
-显示口径是 `借 − 贷`（尾随负号＝贷方多）。拿上传文件算各前缀净额，能唯一反推出「哪一段行被单独成了一批」：
-
-```python
-# 从 xlsx 取每行 BSCHL/WRBTR，按 40→借(+) / 50,31→贷(−) 求带符号净额
-# 实测：1080 行整份净额 0；前 998 行 = +880；第 999~1080 行 = −880  → 与报错 880.00- 精确吻合
-```
-
-**两条极易误判的陷阱**：
-
-1. `第 &1 张` 里的张号是 `ZFM_FII001_SPLIT` 的**函数局部变量 `lv_seq`**，每次调用都从 1 起
-   → **第 N 批也写成「第 001 张」**，不能据此断定它是第一张。
-2. `LV_SPLIT`（是否拆分）只由**入参行数**决定：`lv_cnt > 999` 才置真，**只有真时才追加轧差行**。
-   所以「一批 ≤999 行、本身不平」必然透传 BAPI 原始余额错 —— 报错金额＝那一批的净额，与代码无关。
-
-**结合两条 ⇒ 若报错金额对得上「某一段行的净额」，那批就是被按 `NUMBER`（凭证接口编号）分成了多批**
-（`ZFIB001` 用 `AT END OF NUMBER` 逐组调函数），每批 <999 都不拆不轧差 → 各自不平。
-2026-09-23 实例：1080 行的文件若 `NUMBER` 全为 1 则完全正常（实测模拟 + 真实过账均通过，
-落地凭证 100000053/100000054）；报 `880.00-` 的只可能是被分成 1~998 与 999~1080 两批的情形 ——
-把两段各当一批单独调用即可**逐字复刻**报错（998 行 → `880.00 (CNY)`；82 行 → `880.00- (CNY)`）。
-`CHAR` 排序里空格最小，**`NUMBER` 留空的那段排在最前**，所以它才是「第 001 张」。
-**处置：一张逻辑凭证的 `NUMBER` 必须一致（通常全填 1）。**
-
-**复现必须用真文件逐字生成探针**（`scripts/work/gen_probe_fii001_real.py` → `ZTEST_FII001_SPLIT_REAL.abap`）。
-生成器按「行段」参数化（`分界 998`），场景：A 基线全量 / B 基线 1~998 / C 基线 999~N /
-D 新函数 1~1000 / E 新函数全量 / F 新函数 1~998 / G 新函数 999~N（★复刻报错）；
-**真实 POST 场景要显式开启**（生成器第三个参数），否则每次跑都会多建凭证。
-手工重写数据会漏列：首版漏了贷方行必填的 `RSTGR=152`（只经 `ZSFI_BSEG` 扩展传给 BADI），
-探针报出 `Field Reason Cde is a required field` —— **错误全变了，根因被盖住**。
-
-**推 `$TMP` 探针到 300 的两个坑**：
-
-```bash
-sed 's/^SAP_CLIENT=100$/SAP_CLIENT=300/' env/dev.env > /tmp/sap300.env   # push 只认 env 里的 SAP_CLIENT
-SAP_ENV_FILE=/tmp/sap300.env SRC_FILE=$PWD/.../ZTEST_X.abap node scripts/work/push_prog_source.js
-SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js run ZTEST_X   # run 反之
-```
-
-- **探针程序里不要定义 `FORM`**：同一份代码内联能激活，抽出 `FORM` 后激活报
-  `Statement is not accessible`（`CheckProgram` 却返回**零错误**，极具误导性）→ 改回内联即可。
-- `WRITE: / 4(4) x` 非法（`/` 与列格式必须连写）；分段读 `msgtx` 前先赋给定长 `CHAR220`，否则越界。
-
-**结论先行的话术**：先给「当前代码 + 你的文件跑通了（含真实过账凭证号）」的证据，再给「报错金额反推出的输入集合」，
-最后问一句「上传文件的 `NUMBER` 列是不是全 1」。这比逐行读代码快一个数量级。
+选型结论与理由见 `sap-abap-bapi-usage` §7.1；本项目封装接口（`ZFM_FII001` / `ZFM_FII001_SPLIT` / `ZFM_FII003`）的完整签名、模拟导入、拆分规则、消息处理见 `sap-abap-project-ops` §4 接口范式。
 
 ## 12. 激活报错速查（都是实测踩出来的）
 

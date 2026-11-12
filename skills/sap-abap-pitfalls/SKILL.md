@@ -8,6 +8,7 @@ agent_created: true
 
 用途：**下个项目开工前通读一遍，排障时按症状查**。本技能只收「跨项目可复用」的经验，环境地址、请求号、对象清单见项目侧总纲（如 `sap-abap-project-ops`）。
 完整 120 条（含代码片段与出处）见 `references/casebook.md`。
+**BAPI / 标准函数调用**的坑不在此文件，统一见技能 `sap-abap-bapi-usage`。
 
 **怎么用**：新项目开工 → 直接翻 **§11 开工 checklist**（按时间顺序执行）；已开工遇到问题 → **§10 症状速查** 定位到分节；想深挖某条的完整代码与出处 → `references/casebook.md`。
 
@@ -90,32 +91,15 @@ agent_created: true
 - **`READ TABLE ... WITH KEY` 未命中把 `sy-tabix` 置 0** — 随后 `APPEND sy-tabix TO lt_del` 记进删除清单，`DELETE ... INDEX 0` 直接 DUMP `TABLE_INVALID_INDEX`。循环首行存行号 + 删除前 `IF idx >= 1 AND idx <= lines( )`。
 - **内联 `DATA(...)` 声明在 `IF` 分支里，条件不成立时内表从未创建** ⇒ 后续 `LOOP` 短转储。声明提到方法头部，或取数前置空判断。
 
-### 3.2 BAPI / 标准函数「返 S 或不报错但没写进去」
+### 3.2 BAPI / 标准函数「返 S 但不报错、值没变」
 
-- **BAPI 的 `x` 结构必须与原结构成对传** — 只传 `depreciationareas` 漏 `depreciationareasx` ⇒ 填了 AFASL 就报 `No change parameter given for depreciation area 01`。**缺 x 结构不报语法错，只在数据条件满足时触发。**
-- **SD 增强字段标识结构的数据元素必须是 `CHAR1`** — `SD_SALESDOCUMENT_CHANGE` 走 `GET_CHANGEABLE_FIELDS`，只滚 `WHERE rollname = 'CHAR1' OR 'CHAR01'` 的字段；用 `BAPIUPDATE` 的全部被排除 ⇒ **返回 S、值不变、零报错**，而创建路径不走此清单 ⇒ 典型「创建能写、修改写不进」。**不可改回 `BAPIUPDATE`。**
-- **`BAPIPAREX-VALUEPART1` 只有 240 字符** — 标准函数按偏移连续读 `VALUEPART1~4`（合计 960），只填第一段则尾部**静默截断**（`BAPE_VBAP` 实测 271 字符，后 3 个字段全空、无报错）。按 240 分四段填。
-- **借贷项/无计划行订单类型：数量只认 `TARGET_QTY`** — `BAPISDITM` 里没有任何字段的参考字段是 `KWMENG`；该类项目类别在 `TVEPZ` 无配置 ⇒ 不产生计划行，下发的 `BAPISCHDL` 被静默丢弃，返 S 但 `KWMENG=0`、`NETWR=0`、`VBEP` 0 行。判据用 **`TVEPZ` 有无条目**，**不能用 `TVAP-LFREL`**（`Z001` 与 `Z014` 的 `LFREL` 都为空）、也不能用 `VBTYP`。读取侧同一坑：`VBAP-KWMENG` 恒 0、数量在 `VBAP-ZMENG` ⇒ 回填口径「`KWMENG` 非空优先、为空回退 `ZMENG`」。
-- **`BAPE_*` 首字段是键位，修改模式漏传即清空单号** — 标准函数把 `EXTENSIONIN` 值 `move-corresponding` 进 `E_VBAKKOM`，`VBELN` 留空就把单号覆盖成空 ⇒ `V1 045` 后跟 `V4 219`（**根因看 `V4 219` 前面那条 E 消息**）。
-- **SD 参考单据是三件套** — `REF_DOC` + `REF_DOC_IT` + **`REF_DOC_CA`**（参考凭证类别）；只传前两个报 `V2 068 不含凭证类别 但含 C`（`&2` 空）。行号填 0 或单据不存在是同一条消息但 `&3` 为空。类别取**被参考单据自身**的 `VBAK-VBTYP`，不是抬头 `VGTYP`。
-- **`SD_SALESDOCUMENT_CHANGE` 入口对两个表各自排序** — 删除行必须 `ITEM_IN` 与 `ITEM_INX` **都填** `ITM_NUMBER`；只填 `ITEM_INX` 会错位，报完全不相关的 `T184 没有可用的项目类别`。
-- **`BAPI_USER_EXISTENCE_CHECK` 在本类系统对任何账号都返 0**（连 `ZZZZZZ999` 都通过）⇒ 校验形同虚设，单据转给无效账号后两个界面都看不到。直查 `USR02` + 长度防护（`0 < len <= 12`）。
-- **`DELETE_TEXT` 对不存在的文本 `RAISING NOT_FOUND`** — 标准函数把该 E 消息追加进 `BAPIRET2`，被 `frm_check_return` 判失败 ⇒ 「清空」反而把接口打成 E。清空前先查 `STXH`（`TDOBJECT+TDNAME+TDID+TDSPRAS`），不存在就跳过（顺带让操作幂等）。另：`SD_SALES_DOCU_MAINTAIN` 里清空功能码是 **`003`**（`DELETE_TEXT`），传 `&&`/`005` 只是把文本重写成一条空行。
-- **新增定价条件不能指定步骤号** — 硬编码 `COND_ST_NO='001'` 而 `ZP01` 在 `STUNR=010` ⇒ 报「定价类型不在步骤编号 001 中」。留空由定价过程自动定位；用「条件是否已存在」驱动 `UPDATEFLAG` 的 `I`/`U`。
-- **接口二次拆张时 `OBJ_KEY` 只回一个凭证号** ⇒ 张数少报、按行回写指错凭证。`OBJ_KEY` 布局是 `凭证号(10)+公司代码(4)+会计年度(4)`，年度在 **`+14(4)`**（常被误写 `+10(4)` 取到公司代码）。
-- **`BSEG-BUZEI` 是 `NUMC(3)`，单张凭证 999 行物理上限，BAPI 实际只吸纳 990 行** — 分片上限取 `989 明细 + 1 轧差`；边界必须覆盖 999/1000/1997（1997 按 `>999` 判会切出 1000 行而溢出）。
-- **`BAPIACHE09` 没有 `EXCH_RATE` 字段** — 双币（00+10 行）只给 00 行带汇率时，系统按 OB08 重定抬头汇率（填 7 落 8.28）。`CURR_TYPE='10'` 行也必须带 `exch_rate`，明细行与轧差行两处都要。
-- **双币凭证每个 `ITEMNO_ACC` 必须给两条 `CURRENCYAMOUNT`，且每种币种小计为 0** — 缺 `10` 行报 `Inconsistent currency information`；拆分产生的轧差行同样要补。
-- **`UMSKZ` 在三个 BAPI 结构里都没有字段** — 票据类（W/S）走标准 BAPI 通道会被静默丢弃、科目记错。只能经 `EXTENSION2` 增强落库，或整张走 `POSTING_INTERFACE_*`（FB01 批输入）。
-- **`READ_TEXT` 的 `NAME` 形参是 `TDOBNAME`(70)，实参 `TDNAME`(16) 触发运行期类型冲突** — 编译通过、空入参正常、一命中数据就 500 `Type conflict during a function module call`。形参写 `TYPE tdobname`，或直读 `STXL` 簇表。
+**整节已迁到独立技能 `sap-abap-bapi-usage`**（含 x 结构成对、标识字段 `CHAR1`、`VALUEPART1` 240 分块、`TVEPZ` 数量双通道、`OBJ_KEY` 布局、`BSEG` 999 行、双币 `CURRENCYAMOUNT`、`UMSKZ` 无字段、`DELETE_TEXT` 抛 `NOT_FOUND`、`READ_TEXT` 类型冲突等 16 条）。调 BAPI 或标准函数时加载那个技能。
 
 ### 3.3 文本 / 描述 / 列标题变空
 
 - **字段用匿名内置类型 ⇒ `DD03T` 文本为空 ⇒ ALV 列标题一片空白** — 字段必须挂数据元素（挂上后 `DD03T` 变 0 行是**正确状态**，文本上移）。结构字段文本只能靠 DDL 逐字段 `@EndUserText.label`；**嵌套的 `STRU`/`TTYP` 型字段永远没有 `DD03T` 文本**（SAP 标准结构同样如此）。`CreateStructure` 的 `fields[].description` 不入 `DD03T`。
 - **文本元素未激活 / 只有 inactive 版 ⇒ 运行期 `TEXT-xxx` 恒空** — 表现为 ALV 列标题退回 DDIC 短文本、状态列为空。
 - **域只定义类型没维护值集 ⇒ 选择屏幕 F4 弹不出候选** — 查 `DD07T` 必须带 `AS4LOCAL='A'`（否则取到非激活行）、`ORDER BY VALPOS`（否则得 `1,10,11,2,3…` 字典序）、语言回退域主语言 `DD01L-DOMMASTER`（字段名**不是** `MASTERLANG`）。
-- **`MESSAGE ... WITH` 对整条文本约 70 字符上限** ⇒ 长 BAPI 错误被静默截断成 `Field Reas...`，误导排查方向。改用短前缀 + 字符串模板接原文（≤220 字符，对齐 `BAPI_MSG`）。
-- **`BAPIACGL09-ITEM_TEXT`(50) / `BAPIACHE09-HEADER_TXT`(25) 静默右截断** — 拼「前缀+后缀」先把前缀截到 `长度-后缀长度`。
 - **DDIC 组件名 30 字符静默截断** — JSON 键名映射时会莫名丢键。
 
 ### 3.4 权限与过滤
@@ -218,7 +202,7 @@ agent_created: true
 |---|---|
 | 激活报错但文案与代码对不上 | §2（段序/关键字位置/类型名） |
 | 激活 200、跑起来空/旧 | §1（`activationExecuted`、双版本比对、include active 版） |
-| 返回 S，值没变 | §3.2（x 结构、CHAR1 标识、VALUEPART 分块、TVEPZ） |
+| 返回 S，值没变 | 转 `sap-abap-bapi-usage` §3（x 结构、CHAR1 标识、VALUEPART 分块、TVEPZ） |
 | 数据错位/金额恒空/列错乱 | §3.1（`INTO TABLE` 按位置、APPEND 改 sy-tabix、JOIN 退化） |
 | ALV 列标题空白 / 标签文字为空 | §3.3（匿名类型无 DD03T、文本元素未激活） |
 | 按钮点了没反应 | §5（`POPUP_GET_VALUES` RETURNCODE 写反） |
@@ -287,6 +271,7 @@ agent_created: true
 
 | 技能 | 何时转过去 |
 |---|---|
+| `sap-abap-bapi-usage` | ★ BAPI / 标准函数调用：参数结构约束、静默失效清单、按域选型、对账口径 |
 | `sap-abap-project-ops` | 需要 DEV 项目侧的环境/集团/请求号/对象清单/命令速查 |
 | `sap-abap-prog-push-run` | 报表程序的推送、激活、运行、测试报告模板 |
 | `sap-ddic-object-ops` | 域/数据元素/表/结构的建与改操作步骤 |
