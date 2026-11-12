@@ -264,7 +264,7 @@ cs_itmx-target_qty = 'X'.
 
 **C18. 退货订单 `Z011`（`VBTYP='H'`）**
 `PSTYV` 传 `Z011` 或留空（留空由 `T184` 自动定）；沿用 `Z001` 必报 `V1 321「没有为项目 &2 定义项目类别 &1」`（`T184` 里 `Z011+NORM→Z011`、`Z001+NORM→Z001` 两套独立配置）。数量传正数；编号走 `Z5` → `60000000xx`。
-出处：sap-sd-sales-order-bapi §10
+出处：sap-abap-bapi-usage 分册 50-SD-销售订单 §10
 
 **C19. `GL_ACCT_MASTER_SAVE` 三条隐性必输约束**
 `FH 743 Description missing in maintenance language` ⇒ 描述必须落在**科目表维护语言**（`T004-DSPRA`，公司代码层 `T001-SPRAS`）而非登录语言；
