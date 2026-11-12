@@ -124,14 +124,14 @@ ZFID001A 状态里的按钮**全部消失**。原因是 `RSMPE_BUT` 没有自己
 
 ### 接进"生成程序"的流程
 
-`scripts/gen_zfid001x.js`（付款平台子程序族生成器）现在**同时产出**  
+如果你有一个「源码生成器」（把字段矩阵/文案生成 ABAP 源码的脚本），让它**同时产出**  
 `scripts/cua/config/<PROG>.json`，所以标准四步是：
 
 ```bash
-node scripts/gen_zfid001x.js                 # 1. 源码 + 文本元素 + CUA 配置
+node scripts/<生成器>.js                    # 1. 源码 + 文本元素 + CUA 配置
 SRC_FILE=$PWD/FICO/ZFID001B_付款审批.abap SAP_ENV_FILE=$PWD/portable/env/dev.env \
   node scripts/push_prog_source.js           # 2. 推源码并激活
-SAP_ENV_FILE=$PWD/portable/env/dev.env PROGS=B,C,D node scripts/push_textelements.js   # 3. 文本元素（推完必须单独激活，见技能 sap-abap-prog-push-run §6.0）
+SAP_ENV_FILE=$PWD/portable/env/dev.env PROGS=B,C,D node scripts/push_textelements.js   # 3. 文本元素（推完必须单独激活，见 `sap-abap-prog-push-run/references/text-elements.md` §6.0）
 SAP_ENV_FILE=$PWD/portable/env/dev.env node scripts/gen_cua.js                          # 4. GUI 状态
 ```
 

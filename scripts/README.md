@@ -62,7 +62,7 @@ node scripts/adt.js query "SELECT bukrs, butxt FROM t001"
 | `gen_cua.js` | `scripts/cua/config/<PROG>.json` + `scripts/cua/ZCUA_APPLY.tpl.abap` | GUI 状态功能码登记。配置驱动，`pfno` 自动挑号，重跑幂等。仓库给了一份 `ZMY_PROG.json` 作样例，照抄改按钮即可 |
 | `gen_e2e_harness.js` | `scripts/harness/<PROG>.json` | 把生产报表复制成 `$TMP` E2E 探针，切开「ALV 渲染限制」与「真实转储」。配置含 `src` / `out` / `replace` / `dumpForm` 四段 |
 
-`gen_e2e_harness.js` 的配置没有通用样例可给（`dumpForm` 是按业务造的测试数据），结构看脚本头注释；`dumpForm` 的写法参照 `sap-abap-prog-push-run` §8.0.2 的三段式探针范式。
+`gen_e2e_harness.js` 的配置没有通用样例可给（`dumpForm` 是按业务造的测试数据），结构看脚本头注释；`dumpForm` 的写法参照 [`skills/sap-abap-prog-push-run/references/probe-e2e.md`](../skills/sap-abap-prog-push-run/references/probe-e2e.md) §8.0.1 的三段式探针范式。
 
 ## 技能里提到但本仓库未收录的 13 个
 

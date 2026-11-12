@@ -16,9 +16,9 @@ cp -r skills/sap-* ~/.workbuddy/skills/
 |---|---|---|
 | [sap-abap-bapi-usage](sap-abap-bapi-usage/SKILL.md) | ★ **调 BAPI 之前先看这个**。索引式：`SKILL.md` 只有三张查找表（按 BAPI 名 / 按任务 / 按症状），正文在 `references/` 一个 BAPI 一个文件 | 131 行 + 18 册 1465 行 |
 | [sap-abap-pitfalls](sap-abap-pitfalls/SKILL.md) | ★ **踩坑库**。约 120 条「现象 → 根因 → 解法」+ 症状速查表 + 五阶段开工 checklist | 282 行 + 569 行 |
-| [sap-abap-prog-push-run](sap-abap-prog-push-run/SKILL.md) | 报表推送 / 激活 / 无头运行 / 测试报告；500 根因定位；文本元素；CUA 按钮；批导双按钮状态机；E2E 探针纪律 | 1201 行 |
-| [sap-ddic-object-ops](sap-ddic-object-ops/SKILL.md) | 域 / 数据元素 / 表 / 结构 / 表类型的建与改；主体语言被强制成 EN、MCP 假锁、建表两段式、E071 传输登记 | 531 行 |
-| [sap-export-column-mapping](sap-export-column-mapping/SKILL.md) | 导出 Excel 列 ↔ 源码字段的映射判定（「比值对撞 + 总量二次确认」四步法），不靠列标签猜 | 705 行 |
+| [sap-abap-prog-push-run](sap-abap-prog-push-run/SKILL.md) | 报表推送 / 激活 / 无头运行 / 测试报告。主册只留主干，专题分七册：传输请求与 FM、文本元素、ALV 按钮与 CUA、500 定位、探针纪律、语法/激活报错、生产订单状态 | 162 行 + 7 册 1089 行 |
+| [sap-ddic-object-ops](sap-ddic-object-ops/SKILL.md) | 域 / 数据元素 / 表 / 结构 / 表类型的建与改；主册给铁律、动作序列、卡住速查、建对象脚本的四种范式，另四册：建表 / 字段建模 / 结构改造 / 删除与 E071 | 191 行 + 4 册 432 行 |
+| [sap-export-column-mapping](sap-export-column-mapping/SKILL.md) | 导出 Excel 列 ↔ 源码字段的映射判定（「比值对撞 + 总量二次确认」四步法）；主册是四步法与踩坑案例，另四册是 FAGLFLEXT 复现 → 恒等式定位 → ACDOCA 核对 → 导出指引的连续取证链 | 156 行 + 4 册 574 行 |
 | [sap-cua-gui-status-functions](sap-cua-gui-status-functions/SKILL.md) | GUI 状态功能码自动登记（`gen_cua.js` 配置驱动），绕开 SE41 人工操作 | 329 行 |
 | [sap-s4hana-cloud-adt-connect](sap-s4hana-cloud-adt-connect/SKILL.md) | 接 S/4HANA Cloud 公有云：SSO→reentrance ticket→会话注入；公有云写对象的坑 | 294 行 |
 | [sap-json-interface-mapping](sap-json-interface-mapping/SKILL.md) | 接口 JSON 键名命中契约：`name_mappings` 大小写、`compress` 丢空值、三形态探针 | 174 行 |
@@ -45,6 +45,23 @@ cp skills/sap-abap-bapi-usage/references/_模板.md \
 ```
 
 不改任何已有文件。命名规则：BAPI 全名小写、`_` 转 `-`；专题用 `<域>-<主题>`；通用规则用 `_` 前缀。单文件超 250 行考虑再拆。
+
+## 结构：主册 + references（大文件一律这么拆）
+
+主册超过 ~300 行就拆。判据不是内容总量，而是**一次对话里真正需要常驻的有多少**：
+
+| 放哪 | 放什么 |
+|---|---|
+| `SKILL.md` | 触发条件、主干流程（每次都要走的步骤）、速查表，以及一张「要做什么 → 读哪册」的索引 |
+| `references/<主题>.md` | 单一主题的深挖：某类对象的完整操作、某个报错的定位链路、某个案例的取证过程 |
+
+三条硬规矩：
+
+1. **分册不改章节号** —— 拆的时候保留原编号（§8.1 还是 §8.1），跨册的「见 §8.1」不用全库改；主册索引表负责指路。
+2. **一个事实只有一处** —— 同一个坑不在分册间复制；主册只放判据 + 一行指引。
+3. **单册超 300 行再拆** —— 否则拆成一堆 50 行的碎片，读的人要在文件之间来回跳。
+
+现状：BAPI 18 册、prog-push-run 7 册、ddic 4 册、export-column-mapping 4 册；其余技能仍是单文件（≤350 行）。
 
 ## 什么内容不进技能库
 
