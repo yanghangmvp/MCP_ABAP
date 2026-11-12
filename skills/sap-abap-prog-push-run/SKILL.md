@@ -1,6 +1,6 @@
 ---
 name: sap-abap-prog-push-run
-description: 在 ADT/MCP 通道上把 ABAP 可执行报表（REPORT）推送并激活到 SAP、运行取回结果、再产出测试报告的完整流程。含 PROG 创建/激活报文的 4 处协议细节、按 SAP_ENV_FILE 或 SAP_CLIENT_OVERRIDE 切集团、adt.js run 的适用边界、★「动手前先对齐 `开发模板/` 项目模版」（程序头八字段/事件段/FORM 命名/LVC ALV/文本元素编号的硬指标自检清单，用户两次纠错换来的规矩）、★「带选择屏幕和 ALV 的报表也能无头运行：无 GUI 时 ALV 自动降级成清单输出、网格标题与列标题可核，但 ALV 调用之前有 WRITE 就必 500 Screen output without connection to user；验文本元素必须带 SAP_LANGUAGE_OVERRIDE=zh，否则 ZH-only 文本池读空会误判成文本没推上去」、无头运行返回 HTTP 500 时「用短文本反查运行时错误名（TABLE_INVALID_INDEX / ITAB_ILL_COMPONENT 等）+ 注释二分法」的定位手法、★「短文本为空时用 gen_e2e_harness.js 生成 $TMP E2E 副本，一刀切开『ALV 渲染限制』与『真实转储』」的判定手法、★「FG 内 FORM 形参类型与标准 FM 形参类型不一致（本系统 TDNAME=CHAR16 vs READ_TEXT 的 TDOBNAME=CHAR70）导致编译通过但运行期 500 Type conflict」的根因与两种修法（改 `TYPE tdobname`；或 STXL 直读 + IMPORT FROM INTERNAL TABLE 替代 READ_TEXT）、（BAPI 调用相关经验已抽到 `sap-abap-bapi-usage`）、★★「长文本必须先批量取回再内存 IMPORT，禁止在循环里逐条 SELECT」（含 FOR ALL ENTRIES 空表防护、`INTO` 必须放 SELECT 末尾、键表分批、实测 13,400 次往返→1 次）、★「接口返回『行包含在抬头里』的嵌套结果集（参照 `ZBPM_ISP005`：DDIC 结构内嵌 TTYP 组件 + ABAP 按唯一键二分归位）」、SY-TABIX 被 READ TABLE 改写导致 DELETE ... INDEX 0 转储的陷阱、文本元素（TEXT-xxx）推送后必须单独激活（PROG/PX 对象，激活父程序不会连带激活它）的排查方法，以及「用场景表驱动的诊断报表直接调 BAPI 打印 MSGID/MSGNO/V1..V4」这种把模糊报错钉死到根因的排查手法。当需要新建/更新 $TMP 测试报表、跑 SAP 端回归用例、推送函数模块/文本元素、或 SAP 只回一句拼接消息/一个 500 需要定位根因时加载。
+description: 在 ADT/MCP 通道上把 ABAP 可执行报表（REPORT）推送并激活到 SAP、运行取回结果、再产出测试报告的完整流程。含 PROG 创建/激活报文的 4 处协议细节、按 SAP_ENV_FILE 或 SAP_CLIENT_OVERRIDE 切集团、adt.js run 的适用边界、★「动手前先对齐 `开发模板/` 项目模版」（程序头八字段/事件段/FORM 命名/LVC ALV/文本元素编号的硬指标自检清单，用户两次纠错换来的规矩）、★「带选择屏幕和 ALV 的报表也能无头运行：无 GUI 时 ALV 自动降级成清单输出、网格标题与列标题可核，但 ALV 调用之前有 WRITE 就必 500 Screen output without connection to user；验文本元素必须带 SAP_LANGUAGE_OVERRIDE=zh，否则 ZH-only 文本池读空会误判成文本没推上去」、无头运行返回 HTTP 500 时「用短文本反查运行时错误名（TABLE_INVALID_INDEX / ITAB_ILL_COMPONENT 等）+ 注释二分法」的定位手法、★「短文本为空时用 gen_e2e_harness.js 生成 $TMP E2E 副本，一刀切开『ALV 渲染限制』与『真实转储』」的判定手法、★「FG 内 FORM 形参类型与标准 FM 形参类型不一致（本系统 TDNAME=CHAR16 vs READ_TEXT 的 TDOBNAME=CHAR70）导致编译通过但运行期 500 Type conflict」的根因与两种修法（改 `TYPE tdobname`；或 STXL 直读 + IMPORT FROM INTERNAL TABLE 替代 READ_TEXT）、（BAPI 调用相关经验已抽到 `sap-abap-bapi-usage`）、★★「长文本必须先批量取回再内存 IMPORT，禁止在循环里逐条 SELECT」（含 FOR ALL ENTRIES 空表防护、`INTO` 必须放 SELECT 末尾、键表分批、实测 13,400 次往返→1 次）、★「接口返回『行包含在抬头里』的嵌套结果集（参照 `ZBPM_ISP005`：DDIC 结构内嵌 TTYP 组件 + ABAP 按唯一键二分归位）」、SY-TABIX 被 READ TABLE 改写导致 DELETE ... INDEX 0 转储的陷阱、文本元素（TEXT-xxx）推送后必须单独激活（PROG/PX 对象，激活父程序不会连带激活它）的排查方法，以及「用场景表驱动的诊断报表直接调 BAPI 打印 MSGID/MSGNO/V1..V4」这种把模糊报错钉死到根因的排查手法，以及**批导程序双按钮的状态机纪律**（待处理行必须用不进字段目录的独立内部标记，绝不能用 `ICON`/`MSG` 这类输出列当状态机，否则「先测试导入再正式导入」会空跑）与 **E2E 探针「不得出现任何手工复位」** 的验证纪律。当需要新建/更新 $TMP 测试报表、跑 SAP 端回归用例、推送函数模块/文本元素、或 SAP 只回一句拼接消息/一个 500 需要定位根因时加载。
 agent_created: true
 ---
 
@@ -764,6 +764,57 @@ FORM frm_user_command USING pv_ucomm LIKE sy-ucomm
 4. **`REUSE_ALV_POPUP_TO_SELECT` 的 `T_OUTTAB` 形参是 `STANDARD TABLE`** → 项目里惯用的 `SORTED TABLE ... WITH UNIQUE KEY` 存在**传参类型不匹配风险**。弹窗展示用的内表一律声明为 `STANDARD TABLE OF ... WITH NON-UNIQUE KEY ...`，累加用「`READ TABLE ... WITH KEY` 命中就累加、否则 `INSERT`」保证不重。
 5. **`EXCEPTIONS` 只写该 FM 真实存在的异常名**；想加兜底再补 `OTHERS`（必须最后）。写不存在的异常名 → 激活报 `The exception "XXX" does not exist`。
 
+### 7.7 ★★ 多按钮批导程序：待处理行必须用「独立内部标记」，不能用 ICON / MSG 当状态机
+
+**这是批导程序加了「测试导入」按钮之后最容易踩的逻辑坑，且单次测试测不出来。** 来源：`ZFIB003`（FS00 建科目）改造。
+
+错误写法：
+
+```abap
+LOOP AT gt_tab ASSIGNING <fs_tab> WHERE icon IS INITIAL.   " ← 用输出列当状态机
+  PERFORM frm_glaccount_single ...
+ENDLOOP.
+```
+
+单次运行没问题（`icon` 空 = 待处理）。一旦有「测试导入」按钮：
+
+1. 点测试导入 → 每行 `icon` 被写上（`@5D@` 通过 / `@5C@` 失败）；
+2. 点正式导入 → `WHERE icon IS INITIAL` **命中 0 行** → 一条都导不进去，只回一句「没有需要导入的数据行」。
+
+用户视角就是「校验通过了、图标也有了、导入是空的」。
+
+**正确做法**：行结构加一个**不进字段目录**的内部标记，单独表达「该行不可导入」这一业务事实：
+
+```abap
+" ty_alv 末尾（保持 icon/msg 位置不变，避免影响 ASSIGN COMPONENT 的列序号）
+        icon(5),
+        msg(255),
+        exist(1),      " 已存在（不可导入）；不列入字段目录
+      END OF ty_alv.
+
+" 校验 FORM：每次全量重判，先清后置，保证幂等
+LOOP AT gt_tab ASSIGNING <fs_tab>.
+  CLEAR <fs_tab>-exist.                 " ← 必须先清
+  ...命中目标表则：<fs_tab>-exist = 'X'. <fs_tab>-icon = c_icon_err. <fs_tab>-msg = TEXT-m01.
+ENDLOOP.
+
+" 按钮入口：重算链路 → 重判 → 复位非「不可导入」行的结果列
+PERFORM frm_get_coa_from_bukrs.     "用户可能改过公司代码
+PERFORM frm_check_account_exist.    "用户可能改过科目号
+LOOP AT gt_tab ASSIGNING <fs_tab> WHERE exist IS INITIAL.
+  CLEAR: <fs_tab>-icon, <fs_tab>-msg.
+ENDLOOP.
+
+" 三处循环条件一律改成 exist
+LOOP AT gt_tab ASSIGNING <fs_tab> WHERE exist IS INITIAL.
+```
+
+三个附带收益：重复点击幂等（测试→正式→再点一次正式，第三段自动把已落库行判为「已存在」跳过）；ALV 改数后能重判；汇总口径能分开统计「成功 / 失败 / 跳过已存在」。
+
+**汇总消息的边界也要跟着改**：原来 `IF lv_ok = 0 AND lv_er = 0` 就报「没有需要导入的数据行」，加了 `exist` 之后要把 `lv_skip` 纳入判断，否则「全部行都已存在」时会丢掉跳过条数这条信息。
+
+> **通用教训**：`ICON` / `MSG` / 任何 ALV 显示列都是**输出**，不是状态。跨按钮需要保持的状态必须有独立的内部字段。同理，测试脚本里为了让流程跑通用手工复位这些输出列，就是在替程序掩盖缺陷（见 8.0.1）。
+
 ## 8. 可靠性与 SQL 侧注意
 
 - **激活报错只给一条消息时**，用 `SRC_NAME=ZXXX node scripts/work/act_dump_prog.js` 打原始 `chkl:messages`（带 `href="#start=行,列"`），修完再推，逐轮收敛。
@@ -855,6 +906,37 @@ PERFORM assert_eq USING 1 '返回类型应为 S' gv_e gv_a.
 `ZFM_FII001_SPLIT` 的 `i_trans_hkont` 缺省是 `1999999999` —— 实测该科目**只在 client 300 / 科目表 `5000` 有**，
 client 100 / 科目表 `INT` 查无（`SKA1` + `SKB1` 都空）。探针直接调函数时可以传 `i_trans_hkont` 绕开；
 但测**批导程序**（它不传该入参）时就必须目标集团真有这个科目，否则每张都失败、`ET_DOC` 被清空。
+
+### 8.0.1 ★★ E2E 探针里不得出现任何「为了让流程跑通」的手工复位
+
+**判据：探针里每一次 CLEAR / 重置 / 状态修补，都要问一句「真实用户会做这个动作吗？」不会，那这段代码就在替你掩盖缺陷。**
+
+`ZFIB003` 血泪案例：第一版探针在「① 测试导入」和「② 正式导入」之间插了「`CLEAR icon/msg` + 重跑已存在检查」，理由是"模拟用户看完测试结果后点正式导入"——听起来合理，实际是把真实用户**不会**做的动作塞进了测试。结果正式导入每次都命中全部行，`exist` 状态机缺陷被测试脚本自己掩盖，直到用户在 GUI 上手工点了一遍才暴露。
+
+正确的三段式（一份真实代码路径下互证「测试导入不落库」与「正式导入落库」）：
+
+```abap
+" ① 测试导入
+lv_test = abap_true.
+PERFORM frm_call_bapi USING lv_test.
+PERFORM frm_e2e_readback USING '测试导入后（应无新增）'.       "期望命中 0 行
+
+" ② 正式导入：看完测试结果后【直接】点，不复位、不重跑检查
+"   ← 这一段就是状态机缺陷的回归点，中间插任何 CLEAR 都会把缺陷掩盖掉
+CLEAR lv_test.
+PERFORM frm_call_bapi USING lv_test.
+PERFORM frm_e2e_readback USING '正式导入后（应落库）'.          "期望命中 N 行
+
+" ③ 幂等复跑：再点一次正式导入，已落库行应自动转为「已存在」跳过
+PERFORM frm_call_bapi USING lv_test.
+PERFORM frm_e2e_readback USING '幂等复跑后（不应新增）'.        "期望命中仍为 N 行
+```
+
+配套要点：
+
+- 回查必须覆盖**所有落点表**，只看主表命中不算通过（科目例：`SKA1` 主数据 / `SKAT` 描述验语言 / `SKB1` 公司代码层 / `CSKB` 成本要素，其中 `SKAT-SPRAS` 是验证「维护语言」修正的唯一证据）。
+- 每段补一行 `[计数]` 输出（`已存在= / 成功= / 错误= / 校验通过=`），因为 `MESSAGE ... TYPE 'S'` 在 ADT 无头运行中**不落输出流**，汇总文本无法直接验证，`[计数]` + 逐行图标是等价证据。
+- 每轮跑完会**真的落库**测试数据，第二轮起要换一批主键（科目 9001 → 9011 → 9021），否则全命中「已存在」拿不到正常路径证据；测试报告里要列出残留测试对象。
 
 ### 8.1 ★ 无头运行返回 500：先用「短文本 → 运行时错误名」反查根因
 

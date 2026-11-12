@@ -621,6 +621,5 @@ SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js r
 | `sap-json-interface-mapping` | `name_mappings`、大小写、压缩丢空值、三形态探针 |
 | `sap-tcode-create` | `RPY_TRANSACTION_INSERT` 建事务码 |
 | `sap-cua-gui-status-functions` | `gen_cua.js` 批量登记 GUI 状态 |
-| `sap-bdc-to-bapi-migration` | BDC 录屏改 BAPI/标准函数 |
 | `sap-dump-to-excel-cell` | 从 short dump 反查 Excel 出错单元格 |
 | `sap-export-column-mapping` | 自建导出表头 ↔ 源码字段映射 |

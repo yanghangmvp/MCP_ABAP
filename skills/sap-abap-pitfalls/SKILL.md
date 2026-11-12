@@ -276,7 +276,6 @@ agent_created: true
 | `sap-abap-prog-push-run` | 报表程序的推送、激活、运行、测试报告模板 |
 | `sap-ddic-object-ops` | 域/数据元素/表/结构的建与改操作步骤 |
 | `sap-json-interface-mapping` | `name_mappings` 细节、三形态探针 |
-| `sap-bdc-to-bapi-migration` | BDC 录屏改 BAPI 的迁移路径 |
 | `sap-cua-gui-status-functions` | GUI 状态批量登记 |
 | `sap-tcode-create` | 建事务码 |
 | `sap-dump-to-excel-cell` | 从短转储反查 Excel 出错单元格 |

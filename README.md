@@ -137,10 +137,9 @@ cp -r skills/sap-* ~/.workbuddy/skills/     # 装进 WorkBuddy
 | `sap-abap-bapi-usage` | ★ **BAPI 索引**：一个 BAPI 一个文件（15 个接口册 + 3 个通用册 + 新增模板），SKILL.md 只有三张查找表；新增一个 BAPI = 加一个文件 + 索引加一行 |
 | `sap-abap-project-ops` | ★ 项目作业总纲**模板**：集团切换、速查命令、六铁律、项目约定、接口范式、对象清单骨架 |
 | `sap-abap-pitfalls` | ★ 约 120 条「现象 → 根因 → 解法」+ 症状速查表 + 五阶段开工 checklist |
-| `sap-abap-prog-push-run` | 报表推送 / 激活 / 无头运行 / 测试报告；500 根因定位 |
+| `sap-abap-prog-push-run` | 报表侧全流程：推送 / 激活 / 无头运行 / 500 定位 / ALV 按钮与 GUI 状态 / 文本元素 / **批导双按钮状态机** / **E2E 探针纪律** / 测试报告 |
 | `sap-ddic-object-ops` | 域 / 数据元素 / 表 / 结构 / 表类型的建与改 |
 | `sap-json-interface-mapping` | 接口报文键名命中契约、`compress` 丢空值、三形态探针 |
-| `sap-bdc-to-bapi-migration` | BDC 批导改标准函数 / BAPI 的五步法 |
 | `sap-cua-gui-status-functions` | 批量登记 GUI 状态功能码，绕开 SE41 |
 | `sap-tcode-create` | 批量建事务码 |
 | `sap-dump-to-excel-cell` | 从 short dump 反查 Excel 出错单元格 |
@@ -170,6 +169,6 @@ MCP_ABAP/
 ├── portable/                 便携包可读源码（bin / dist / install / verify / env 模板 / 文档）
 ├── releases/                 离线整包 zip（含 node_modules）
 ├── scripts/                  13 个 ADT 直连作业脚本
-├── skills/                   12 个可自动加载的 Agent Skill（BAPI 索引含 18 个分册、120 条踩坑库）
+├── skills/                   11 个可自动加载的 Agent Skill（BAPI 索引含 18 个分册、120 条踩坑库）
 └── docs/                     部署、铁律、踩坑、脚本、交付流程
 ```

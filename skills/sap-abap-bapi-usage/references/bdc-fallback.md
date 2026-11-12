@@ -2,7 +2,21 @@
 
 **用途**：确认无标准接口后的最后手段。
 **先决**：先走完 `_通用调用规范.md` §1 的判定顺序 —— 封装接口 → BAPI/标准 FM → `POSTING_INTERFACE_*` → 才是 BDC。
-**改造路径**：从 BDC 改造成标准函数见 `sap-bdc-to-bapi-migration`。
+**改造路径**：把 BDC 批导改造成标准函数，见 `_通用调用规范.md` §5 与 `sap-abap-prog-push-run` §7.7 / §8.0.1（双按钮状态机、探针纪律）。
+
+---
+
+## 0. 手上的 BDC 该不该改
+
+| BDC 的形态 | 处置 |
+|---|---|
+| **批量录入**（`BDCDATA` 内表 + `CALL TRANSACTION ... USING` 循环建数据，如 `FS00` 建科目、`MM01` 建物料） | **优先改成 BAPI / 标准函数** —— BDC 依赖屏幕字段名，标准屏幕一变就静默失败；且无法逐行拿结构化返回消息 |
+| **跨程序跳转**（`CALL TRANSACTION 'Zxxxx' AND SKIP FIRST SCREEN`，带 `#EC CI_CALLTA` 豁免） | **保留**。这不是 BDC 批导，是导航 |
+| **仅调标准事务取数 / 展示**（`CALL TRANSACTION 'CO03'/'FB03' AND SKIP FIRST SCREEN`） | 保留。改 `BAPI_*_GETDETAIL` 收益有限，除非需要结构化数据 |
+
+判断口诀：**要写数据 → 改；只是跳过去 → 留。**
+
+批量录入改造后的程序骨架（缓存校验数据 → 内存逐行校验 → 组装结构 → 单行调用 + 汇总消息）与「测试导入 / 正式导入」双按钮范式，见 `sap-abap-prog-push-run` §7.7。
 
 ---
 
