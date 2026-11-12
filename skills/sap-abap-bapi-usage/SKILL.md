@@ -126,7 +126,6 @@ cp _模板.md bapi-xxx-yyy.md       # 文件名 = BAPI 全名小写、下划线�
 
 | 技能 | 分工 |
 |---|---|
-| `sap-abap-project-ops` | 项目级封装接口的具体签名（`ZFM_FII*` 等）；本技能只讲通用与标准接口 |
 | `sap-abap-pitfalls` | 非 BAPI 类坑（语法、ADT 激活、ALV、F4、DDIC） |
 | `sap-abap-prog-push-run` | 报表侧：推送、激活、无头运行、500 定位 |
 | `sap-json-interface-mapping` | 接口 JSON 报文的键名与空值控制 |

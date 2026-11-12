@@ -1,22 +1,45 @@
+# 项目作业总纲 · 示例档案（已脱敏）
+
+> **这是一份真实项目的作业总纲，不是通用规范。**
+> 里面的系统拓扑、命名前缀（`*ISP*` / `*ISC*`）、15 条硬性约定、对象清单，都是**那个项目的甲方和团队定的**。
+> 换一个项目，这些大概率全都不一样 —— 所以**抄结构，不要抄命名和约定**。
+
+通用且确定的东西不在这里：
+
+| 内容 | 在哪 |
+|---|---|
+| ADT 写入六铁律（`proxy:false` / 父请求号 / 不带 `SAP_CLIENT_OVERRIDE` / HTTP 200 ≠ 激活 / 锁顺序 / 只印 `e.message`） | [`docs/02-ADT写入铁律.md`](../docs/02-ADT写入铁律.md) |
+| 作业脚本用法与环境变量 | [`docs/04-作业脚本手册.md`](../docs/04-作业脚本手册.md) |
+| 跨项目可复用的踩坑（120 条） | [`skills/sap-abap-pitfalls`](../skills/sap-abap-pitfalls/SKILL.md) |
+| BAPI / 标准函数调用 | [`skills/sap-abap-bapi-usage`](../skills/sap-abap-bapi-usage/SKILL.md) |
+
+> 本文已去掉客户专属的封装接口签名表（甲方业务逻辑，不入公开仓库）。
+
 ---
-name: sap-abap-project-ops
-description: ABAP 项目作业总纲模板（可直接套用到新项目）。一份跑完整个 ERP 实施项目后沉淀下来的「项目级操作手册」骨架，覆盖：环境与集团切换（哪个集团是空壳、哪个有数据、怎么切）、scripts 速查命令、ADT 写入六铁律（proxy:false、CORR_NR 传父请求号、可传输对象不带 SAP_CLIENT_OVERRIDE、HTTP 200 ≠ 激活成功、lock→PUT→unlock→activate 不可颠倒、异常只印 e.message）、项目硬性约定（强制中文、瘦函数体+FORM、文案走文本元素、交付四步、建表唯一路径、生产源码注释口径）、出向/入向接口范式（属性表取 URL、name_mappings、compress 传空、网关 HTTP Basic、键级对账）、项目封装接口（会计凭证过账/冲销/拆分）的调用口径、高频坑索引、主要生产对象清单、交付脚本约定。用法：复制本文件到新项目和/或技能目录，把「示例客户 / DEV / 100 / 300 / DEVK9xxxxx / ZXXX」这类占位逐个替换成本项目实际值，跑完一次就成型。当要为新 SAP 项目建立作业总纲、或需要回忆环境·集团·命令·项目约定、或排查「激活失败 / 对象被锁 / 接口报错 / 数据为空」时加载本技能。
-agent_created: true
+
+## 0. 开工前必须摸清的 8 件事
+
+**这一节是本文唯一可以直接照用的部分** —— 换任何项目，这 8 个问题都要先问清楚，问不清后面全是返工。
+
+| # | 要问清 | 为什么 |
+|---|---|---|
+| 1 | 几套环境？各自 SID / 主机 / 端口 / 集团号 | 环境搞错是最高频事故 |
+| 2 | **哪套集团是空壳、哪套有真实数据** | 决定查数据时切哪个，避免「查出来全是 0 行」 |
+| 3 | 请求号体系：谁是父请求、谁是任务 | `CORR_NR` 传错，对象进不了传输 |
+| 4 | 命名空间与包划分：对象前缀规则 | 建错前缀，激活/传输都受限 |
+| 5 | 甲方对交付物的要求：注释语言、函数体风格、文案是否走文本元素、测试报告格式 | 交付被打回基本都在这几条上 |
+| 6 | 接口规范：出向/入向命名、报文格式、网关地址存在哪、认证方式 | 接口地址硬编码是后期维护灾难 |
+| 7 | 有没有「封装接口优先于直调 BAPI」的项目规定 | 有的话调 BAPI 前必须先找封装 |
+| 8 | 生产对象清单由谁维护、怎么维护 | 否则交付时说不清改了哪些对象 |
+
+下面 1~10 节是一份**填好的样例**，看它长什么样，然后照自己的答案写一份。
+
 ---
 
-# ABAP 项目作业总纲（模板）
 
-适用工作区：`~/ABAP-AI`（示例路径，按项目实际填）。
+## 1. 环境与集团
 
-> **这是模板，不是某家公司的文档。** 下文出现的 `示例客户`、`DEV`、`DEV-B`、`DEVK9xxxxx`、`sapdev.example.com`、`devuser`、`ZXXX` 等均为占位符，套用到新项目时整体替换即可。
-> 保留的是**结构与判据**：哪些东西必须开工前摸清、哪些顺序不可颠倒、哪些坑必踩、哪些话必须先问用户。
-
-
-对象级实现细节 → 工作区 `.workbuddy/memory/档案_系统对象.md`；细分手法 → 文末第 9 节列出的专项技能。
-
----
-
-## 0. 环境与集团
+> 样例：三套环境、两个集团，100 是空壳、300 有数据。你的项目结构不同，但**「哪套是空壳」这件事一定要写在这里**，否则每次查数据都要重新试一遍。
 
 | 环境 | 地址 / 配置文件 | 集团 | 备注 |
 |---|---|---|---|
@@ -31,7 +54,12 @@ agent_created: true
 
 ---
 
-## 1. 速查命令
+---
+
+
+## 2. 速查命令
+
+> 样例：配本仓库 `scripts/` 用的常用命令。脚本参数说明见 `docs/04`。
 
 ```bash
 # 查询 / 建对象走 MCP 工具通道；以下为工作区脚本
@@ -51,7 +79,12 @@ OBJ=ZXXX OBJ_TYPE=PROG/P OBJ_URI=/sap/bc/adt/... node scripts/work/_act_dbg.js  
 
 ---
 
-## 2. 六铁律（ADT 写入）
+---
+
+
+## 3. ADT 写入判定手法
+
+> 六条通用铁律的完整版见 `docs/02`。这里是**该项目额外踩出来的判定手法**，属可复用部分。
 
 1. 一律 `proxy: false`（本机代理会让写请求 socket hang up / 报 CSRF 失败）。
 2. 可传输对象 `CORR_NR` 传**父请求号**（`DEVK900006`=请求、`DEVK900007`=任务；E071 记在任务下属正常）。
@@ -81,7 +114,12 @@ OBJ=ZXXX OBJ_TYPE=PROG/P OBJ_URI=/sap/bc/adt/... node scripts/work/_act_dbg.js  
 
 ---
 
-## 3. 项目硬性约定（15 条）
+---
+
+
+## 4. 项目硬性约定（15 条）
+
+> ⚠️ **这一节最不能照抄。** 强制中文注释、瘦函数体 + `FORM`、CASE 分支写字面量、建表只走一条路…… 都是那个项目的团队约定。你的项目该问第 0 节第 5 条。
 
 1. 语言强制 **ZH**（含 DDIC 主语言）。
 2. 接口一律「**瘦函数体 + FORM**」。
@@ -148,7 +186,12 @@ OBJ=ZXXX OBJ_TYPE=PROG/P OBJ_URI=/sap/bc/adt/... node scripts/work/_act_dbg.js  
 
 ---
 
-## 4. 接口范式
+---
+
+
+## 5. 接口范式
+
+> 通用部分：命名方向、报文与网关、DDIC 与 FM、嵌套结果集。**命名前缀 `*ISP*` / `*ISC*` 是那个项目的规则**，判据可以参考。
 
 ### 出向 `*ISC*` / 入向 `*ISP*`
 
@@ -197,245 +240,10 @@ OBJ=ZXXX OBJ_TYPE=PROG/P OBJ_URI=/sap/bc/adt/... node scripts/work/_act_dbg.js  
 - ★ 嵌套子结构**不放父键** ⇒ `APPEND INITIAL LINE TO <fs_head>-item ASSIGNING <fs_item>` 就地嵌入；
   跨结构落库用 `MOVE-CORRESPONDING` 中转。
 
-### 会计凭证过账走 `ZFM_FII001`、冲销走 `ZFM_FII003`，不要再直接调 BAPI
-
-FICO 付款平台（ZFID001A/B/C/D）与 `ZBPM_ISP003 / ZFM_FII002` 过账全部走**项目封装接口 `ZFM_FII001`**；
-冲销走 **`ZFM_FII003`**（2026-09-20 起）。写新程序时**先确认当前口径**
-（同事在改其他程序时可能刚切过去），别照抄老程序的 BAPI 写法。
-
-```abap
-DATA: ls_req  TYPE zsfii001_req,
-      ls_head TYPE zsfii001_head_in,
-      ls_item TYPE zsfii001_item_in,
-      lt_item TYPE zttfii001_item_in,
-      ls_resp TYPE zsrest_out.
-" HEAD: bukrs/blart/bldat(凭证日期)/budat(过账日期)/monat/usnam/xblnr/waers/bktxt
-"       STATUS 留空 = 直接过账；置 '2' = 走预制凭证
-" ITEM: buzei/bschl/hkont/kunnr/lifnr/umskz/kostl/aufnr/vbel2/zfbdt/wrbtr/sgtxt/zuonr/rstgr
-ls_req-req-head = ls_head.
-ls_req-req-item = lt_item.
-CALL FUNCTION 'ZFM_FII001'
-  EXPORTING i_req  = ls_req
-  IMPORTING o_resp = ls_resp.
-" ★ 判定：ls_resp-msgty = 'S' **且** ls_resp-sapnum 非空才算过账成功；
-"   sapnum 就是会计凭证号。接口内部自己 COMMIT / ROLLBACK 并拼好 msgtx。
-```
-
-**★ 模拟导入：`i_testrun = 'X'`（2026-09-22 新增，`ZFIB001` 用）**
-
-```abap
-CALL FUNCTION 'ZFM_FII001'
-  EXPORTING i_req     = ls_req
-            i_testrun = 'X'        " 只校验、不落库
-  IMPORTING o_resp    = ls_resp.
-```
-
-- 非票据路径改调 **`BAPI_ACC_DOCUMENT_CHECK`**（与 POST 参数结构完全兼容，仅少 `obj_key` 出参，
-  所以字段组装 / `EXTENSION2` 增强逻辑全复用），**不 COMMIT 也不 ROLLBACK**；
-  通过时 `msgtx = ZFI_MSG-017「模拟通过，未生成会计凭证」`、`sapnum` 留空。
-- **票据（汇票）行**（`UMSKZ = W/X/Y` → `lv_bdc='X'`）本来是绕 BAPI 走 BDC 的，
-  而 `POSTING_INTERFACE_START` 的 `I_UPDATE` 值域实测只有 **`S/A/L`**
-  （源码 `IF UPDATE CN 'SAL' → UPDATE_INVALID`）—— **没有"不更新数据库"档位**，
-  故模拟时**直接回 `E` + `ZFI_MSG-018`，不伪造成功**。
-- 参数可选，老调用方（`ZBPM_ISP002` 等）不传即维持原行为。
-- **不要在调用方"跑完再 `ROLLBACK`"** —— 接口内部自己 `BAPI_TRANSACTION_COMMIT`，外层回滚无效。
-- **模拟结果不能标成"已处理"**：若调用方用图标驱动"待处理行"判定（`ZFIB001` 的
-  `frm_before_import` 判据是 `lv_id <> icon_led_green`），模拟必须回**黄灯 `icon_led_yellow`**、
-  绿灯只留给"已落库"。否则用户「先模拟、再正式导入」时正式导入命中 0 行
-  —— 与 `ZFIB003` 缺陷 D-07 同一类，已验证过两次。
-- 落地实例：`ZFIB001` 的 `ZTEST`（模拟）/`ZLOAD`（正式）按钮，
-  测试报告 `测试报告/ZFIB001_会计凭证批导_模拟导入_测试报告_20260922.md`。
-
-**★ 模拟模式验证「拆分创建」`ZFM_FII001_SPLIT`（2026-09-22 交付，同函数组 `ZFG_FI001`）**
-
-`BSEG-BUZEI` 是 `NUMC(3)`，单张 FI 凭证 999 行是**物理上限**（S/4HANA 2023 也一样），
-`ZFM_FII001_SPLIT` 把 >999 行拆成多张：入参 `i_req / i_testrun / i_trans_hkont`，
-出参 `o_resp / et_doc(ZTTFII001_SPLIT)`；≤999 行直接委托 `ZFM_FII001`。
-
-```abap
-CALL FUNCTION 'ZFM_FII001_SPLIT'
-  EXPORTING i_req = ls_req  i_testrun = 'X'  i_trans_hkont = '2202999900'
-  IMPORTING o_resp = ls_resp  et_doc = lt_doc.   " et_doc 每张：ITEM_FROM/TO/CNT/DIFF_AMT/DIFF_BSCHL
-```
-
-- **每张最多 998 行明细 + 1 行轧差行 = 999**；片内 `BUZEI` 重新编号。
-- 汇总按 **`TBSL-SHKZG='H'` 取负**（不要硬编码 `50/31/11/39/19` 列表）；
-  **Σ>0 → 轧差行贷方 `50`，Σ<0 → 借方 `40`**；金额 `= -Σ`（BAPI 符号：借正贷负）。
-- **切片阈值取 998，不是「剩余 > 999」**：1997 行按后者会产出 1000 行的张（BUZEI 溢出）。
-  边界用例必测 **1997**（→998+998+1）、1000（→998+2）、1998（→998+998+2）。
-- **切片上限必须按场景区分**：拆分场景 `998`（给轧差行留一行），**不拆分（≤999 行）场景 `999`**。
-  曾因无条件按 998 截断，把 **999 行**的单据切成 998+1 两张 —— 第 2 张只有单边 1 行且无轧差行，
-  报 `Accounting Interface: Balance in transaction currency`。**边界用例必须包含 999 与 1997**。
-- **`i_trans_hkont` 必须是资产负债类（非成本相关）科目**，否则轧差行缺成本对象，报
-  `Account xxx requires an account assignment relevant to cost accounting`。
-- 断言集：张数 = `(行数+997) DIV 998`、每张明细 ≤998、ΣDIFF_AMT = 0、末张覆盖到末行、方向与符号一致。
-
-**★ 探针必带「基线对照」（本次靠它切开 2 次环境误判）**
-
-同一抬头/科目/期间，先调**原始** `ZFM_FII001` 跑 5 行：
-
-- 基线返回 `S` ⇒ 环境正常，新逻辑的失败才算缺陷；
-- 基线同样报错 ⇒ 问题在抬头/科目/期间/字段状态组，**别改新代码**。
-
-FI 侧最常见的两类环境坑（报错文本有误导性）：
-科目字段状态组要求 `RSTGR` 付款原因代码（`Field Reason Cde is a required field for G/L account …`，
-该字段只经 `ZSFI_BSEG` 扩展给 BADI，标准检查阶段看不到）；
-成本要素/P&L 科目必须有成本对象。挑测试科目时优先字段状态组宽松的（公司 5000 下资产/负债类多为 `Z001`）。
-
-**★ `MESSAGE ... WITH` 对整条文本有长度上限（实测约 70 字符）——长错误会被静默截断**
-
-症状：只能看到 `Field Reas...` 这种半截串，后半段凭空消失。**不要用 `WITH` 传长文本**：
-
-```abap
-MESSAGE e022(zfi_msg) INTO o_resp-msgtx WITH lv_seq space.   " 只用它拼短前缀
-IF lv_msg IS NOT INITIAL.
-  o_resp-msgtx = |{ o_resp-msgtx }{ lv_msg }|.              " BAPI 原文手工接上（≤220 字符）
-ENDIF.
-```
-
-另：`WRITE` 列表输出也会截行，诊断时按 `msgtx+0(55) / +55(55) / +110(55) / +165(55)` 分段打印。
-
-**★ 与「直接调 BAPI」的差别（照抄必错）**
-
-- `ZFM_FII001` **按 BSCHL 查 TBSL 反推借贷方向**（内部 `ls_item-shkzg = ls_tbsl-shkzg`），
-  **金额一律传正数**。记账码必须给对 —— 给错或给了 TBSL 里没有的码，接口回报「记账码不存在」类错误（zfi_msg 002）。
-- 行项目号字段是 `ZSFII001_ITEM_IN-BUZEI`（NUMC 3），**不是** BAPI 的 `ITEMNO_ACC`。
-- **`BAPIACGL09` 没有 `RSTGR` 字段**；原因代码填 `ZSFII001_ITEM_IN-RSTGR`，接口自动走
-  `EXTENSION2` + 扩展结构 `ZSFI_BSEG` 传入。
-- **★ 冲销也走项目封装接口 `ZFM_FII003`**（2026-09-20 起；`BAPI_ACC_DOCUMENT_REV_POST` 写法已废弃）：
-
-```abap
-DATA: ls_req  TYPE zsfii003_req,
-      ls_resp TYPE zsrest_out.
-ls_req-req-bukrs = <bukrs>.  ls_req-req-belnr = <belnr>.   " 前导零可有可无
-ls_req-req-gjahr = <gjahr>.  ls_req-req-stgrd = <冲销原因>.
-ls_req-req-budat = <冲销日期>.
-CALL FUNCTION 'ZFM_FII003' EXPORTING i_req = ls_req IMPORTING o_resp = ls_resp.
-" ★ 判成败只能看 MSGTY='S'（成功时 MSGTX 也非空！）；ls_resp-sapnum = 冲销凭证号
-" ★ 内部经 CALL TRANSACTION 'FB08' 的 BDC 自行提交，调用方不要再 BAPI_TRANSACTION_COMMIT
-```
-
-  要点：入参**只有 `I_REQ-REQ` 一个子结构**（`ZSFII003_REQ` 顶层的同名字段不被读取）；
-  内部已做「原凭证未冲销(`BKPF-XREVERSAL=''`)」与「来源 RMRP/VBRK 拒冲」校验，调用方不必重复。
-  **易踩**：`ZSREST_OUT-MSGTX` 成功时非空 —— 老程序里「MSGTX 非空 = 失败」的判据必须改成
-  `IF ls_ret-msgty <> 'S'.`（ZFID001C/D 已改）。详见 `FS文档/ZFM_FII003_冲销接口说明_20260920.md`。
-  旧写法（需 `FI_REFERENCE_CREATE` 拼 `REVERSAL-OBJ_KEY_R`、BAPI 的 `OBJ_KEY` 由过账后回填）仅作历史参考。
-
-#### `ZFM_FII001_SPLIT`：一张逻辑凭证拆成多张后，怎么把「哪一行落在哪一张」传回调用方
-
-`ZFM_FII001_SPLIT` 的 `ET_DOC`（`ZTTFII001_SPLIT`）每张返回
-`SEQ / BUKRS / BELNR / GJAHR / ITEM_FROM / ITEM_TO / ITEM_CNT / DIFF_AMT / DIFF_BSCHL / HKONT`。
-
-**关键结论：按行归属要用「组内行序」，不要用 `ITEM_FROM/ITEM_TO`。**
-
-原因：`ITEM_FROM/ITEM_TO` 是**入参行的 `BUZEI`**，而批导模板里的 `BUZEI` **允许留空或重复**
-（探针把 1000 行全填 `001` 也照样能预览正确归属）。`ZSFII001_ITEM_IN-BUZEI` 实测是 `POSNR_ACC`(NUMC10)、
-装得下 1~1080，**不是** `NUMC3`；但既然来源不保证唯一，就不能拿它当匹配键。
-
-正确做法（`ZFIB001` 2026-09-23 实践）：
-
-```abap
-"调用后：用 ITEM_CNT 依次累加，换算成「组内第几行」的区间
-lv_maxseq = lines( lt_doc ).
-CLEAR lv_idx.
-LOOP AT lt_doc INTO ls_doc.
-  CLEAR gs_split.
-  gs_split-number = lv_number.          "排序号（逻辑凭证）
-  gs_split-seq    = ls_doc-seq.
-  gs_split-maxseq = lv_maxseq.
-  gs_split-belnr  = ls_doc-belnr.
-  IF ls_doc-item_cnt IS NOT INITIAL.
-    CLEAR lv_take.
-    lv_take           = ls_doc-item_cnt.
-    gs_split-idx_from = lv_idx + 1.     "★ 组内第几行，从 1 起
-    gs_split-idx_to   = lv_idx + lv_take.
-    lv_idx            = gs_split-idx_to.
-  ENDIF.
-  APPEND gs_split TO gt_split.
-ENDLOOP.
-```
-
-回写侧要求**入参顺序 = 行序**：建 `ls_req-req-item` 时的 `APPEND` 顺序，与回写 ALV 时遍历
-`<ft_data>` 的顺序必须用**同一套过滤条件**（同一 `READ TABLE gt_temp ... CONTINUE`），否则序号错位。
-
-四个必踩的细节：
-
-1. **`TY_SPLIT-SEQ/MAXSEQ` 用 `TYPE i`**，不要用 `NUMC3` —— 否则字符串模板拼出「本行第 001/002 张」。
-2. **只在该逻辑凭证 `MAXSEQ > 1` 时追加标注**，未拆分的不要动消息列，否则改变既有行为（要做回归断言守住）。
-3. **缓存表必须随 `GT_TEMP` 一起在「导入前检查」里 `CLEAR`**，否则重复点按钮会累积旧区间。
-4. 模拟模式（`i_testrun='X'`）下 `ET_DOC-BELNR` 为空，消息渲染成「…（本行第 1/2 张，未生成凭证号）」。
-
-**落表位置取决在模板有没有列**：`ZFIB001` 上传模板固定 18 列
-（`CHECK/ID/MSG/NUMBER/BUKRS/BLART/BLDAT/BUDAT/MONAT/WAERS/BKTXT/BUZEI/BSCHL/HKONT/WRBTR/KOSTL/LIFNR/MEINS`），
-**没有 `BELNR` 列** → 只能写 `MSG`。若以后要独立列，程序里 `PERFORM frm_convent_data_in USING 'BELNR' ...`
-在列不存在时 `ASSIGN COMPONENT` 失败会静默忽略，可以预先埋着。
-
-**验证方式**：把探针的 1000 行明细分两段（如 1~998 借、999~1000 贷），
-断言「行 1~998 命中第 1/2 张、行 999~1000 命中第 2/2 张、错位 0」；
-并且**故意把全部行的 `BUZEI` 都写成 `001`** —— 这样断言通过就等于证明走的是行序而非 `BUZEI`。
-
-### 11.2 ⭐ 用户报「拆分后第 001 张不平」时的排查套路（2026-09-23 实战，一手结论：先反推输入集合）
-
-**症状**：批导消息列报 `第 001 张凭证创建失败：… 会计接口：以交易货币 880.00- (CNY) 计的余额`，
-用户坚称「改之前是好的」。
-
-**先算，别先读代码。** FI 那条 `Balance in Transaction Currency &1` 里的金额＝**该批的带符号净额**，
-显示口径是 `借 − 贷`（尾随负号＝贷方多）。拿上传文件算各前缀净额，能唯一反推出「哪一段行被单独成了一批」：
-
-```python
-# 从 xlsx 取每行 BSCHL/WRBTR，按 40→借(+) / 50,31→贷(−) 求带符号净额
-# 实测：1080 行整份净额 0；前 998 行 = +880；第 999~1080 行 = −880  → 与报错 880.00- 精确吻合
-```
-
-**两条极易误判的陷阱**：
-
-1. `第 &1 张` 里的张号是 `ZFM_FII001_SPLIT` 的**函数局部变量 `lv_seq`**，每次调用都从 1 起
-   → **第 N 批也写成「第 001 张」**，不能据此断定它是第一张。
-2. `LV_SPLIT`（是否拆分）只由**入参行数**决定：`lv_cnt > 999` 才置真，**只有真时才追加轧差行**。
-   所以「一批 ≤999 行、本身不平」必然透传 BAPI 原始余额错 —— 报错金额＝那一批的净额，与代码无关。
-
-**结合两条 ⇒ 若报错金额对得上「某一段行的净额」，那批就是被按 `NUMBER`（凭证接口编号）分成了多批**
-（`ZFIB001` 用 `AT END OF NUMBER` 逐组调函数），每批 <999 都不拆不轧差 → 各自不平。
-2026-09-23 实例：1080 行的文件若 `NUMBER` 全为 1 则完全正常（实测模拟 + 真实过账均通过，
-落地凭证 100000053/100000054）；报 `880.00-` 的只可能是被分成 1~998 与 999~1080 两批的情形 ——
-把两段各当一批单独调用即可**逐字复刻**报错（998 行 → `880.00 (CNY)`；82 行 → `880.00- (CNY)`）。
-`CHAR` 排序里空格最小，**`NUMBER` 留空的那段排在最前**，所以它才是「第 001 张」。
-**处置：一张逻辑凭证的 `NUMBER` 必须一致（通常全填 1）。**
-
-**复现必须用真文件逐字生成探针**（`scripts/work/gen_probe_fii001_real.py` → `ZTEST_FII001_SPLIT_REAL.abap`）。
-生成器按「行段」参数化（`分界 998`），场景：A 基线全量 / B 基线 1~998 / C 基线 999~N /
-D 新函数 1~1000 / E 新函数全量 / F 新函数 1~998 / G 新函数 999~N（★复刻报错）；
-**真实 POST 场景要显式开启**（生成器第三个参数），否则每次跑都会多建凭证。
-手工重写数据会漏列：首版漏了贷方行必填的 `RSTGR=152`（只经 `ZSFI_BSEG` 扩展传给 BADI），
-探针报出 `Field Reason Cde is a required field` —— **错误全变了，根因被盖住**。
-
-**推 `$TMP` 探针到 300 的两个坑**：
-
-```bash
-sed 's/^SAP_CLIENT=100$/SAP_CLIENT=300/' env/dev.env > /tmp/sap300.env   # push 只认 env 里的 SAP_CLIENT
-SAP_ENV_FILE=/tmp/sap300.env SRC_FILE=$PWD/.../ZTEST_X.abap node scripts/work/push_prog_source.js
-SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js run ZTEST_X   # run 反之
-```
-
-- **探针程序里不要定义 `FORM`**：同一份代码内联能激活，抽出 `FORM` 后激活报
-  `Statement is not accessible`（`CheckProgram` 却返回**零错误**，极具误导性）→ 改回内联即可。
-- `WRITE: / 4(4) x` 非法（`/` 与列格式必须连写）；分段读 `msgtx` 前先赋给定长 `CHAR220`，否则越界。
-
-**结论先行的话术**：先给「当前代码 + 你的文件跑通了（含真实过账凭证号）」的证据，再给「报错金额反推出的输入集合」，
-最后问一句「上传文件的 `NUMBER` 列是不是全 1」。这比逐行读代码快一个数量级。
-
-### 归档包移植
-
-先查 `/THINKWAY/*` 依赖（本系统没有，换 `zgsp_1c_rfc_logger` / `zgsp_cl_abap_properties`）→ 瘦函数体 + FORM
-→ `compress=''` → 补 HTTP 非 2xx / 空报文分支 → 地址两级回退 → 凭据前置校验 → `RVAR1`。
-
-- 地址回退链：`ZCBS_ISCxxx` → `ZGSP_EPIC_ISC100`。
-- **归档函数名 ≠ 客户编号**时，去对应 FS 的 A1「接口编号（原集团 ZCBS_ISxxxx）」找，别去试编号
-  （原集团 `ZCBS_ISC003` → 客户 `ZCBS_ISC006`）。
-
 ---
 
-## 5. 高频坑索引
+
+## 6. 高频坑索引
 
 - ★★ **FM（函数模块）四坑（2026-10-16 `ZFM_AIAB_MOUNT` 实测）**：
   ① **FM 源码里 `*"` 是签名声明区，不是自由注释** —— 写自由文本被 ADT 拒收
@@ -526,7 +334,12 @@ SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js r
 
 ---
 
-## 6. 主要生产对象
+---
+
+
+## 7. 主要生产对象
+
+> 样例：按类型分组的对象清单，交付时用来核对「改了哪些」。对象名保留作示例。
 
 - **FM / 过账**：`ZFM_FII001` 过账、`ZFM_FII003` 冲销（成功判 `MSGTY='S'`）、`ZFM_FII001_SPLIT` 拆分（>999 行）。
 - **出向 `*ISC*`**：`ZCBS_ISC001`(客商)、`002`(查付款排程)、`003`(推付款单据)、`004`(查收付款结算单)、
@@ -542,7 +355,10 @@ SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js r
 
 ---
 
-## 7. 交付脚本约定
+---
+
+
+## 8. 交付脚本约定
 
 - ★★ `prep_object.js`（2026-11-11）：**改任何既有对象前的第一步**。一轮并行取齐
   「现网源码 + 文本元素 symbols/selections 激活版 + TADIR + E071/E070 请求归属 + 档案命中段 + 归档 diff」，
@@ -564,7 +380,10 @@ SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js r
 
 ---
 
-## 8. ★ 2026-10 增补硬事实
+---
+
+
+## 9. 增补硬事实
 
 - **改可交付对象前先回读现网**：用户会直接在 SE80 改生产对象而不回写归档。
   实例 `ZBPM_ISP002` 现网比 `FICO/` 归档多 71 行（`ZDJZT/ZSFJW/ZSKDW 拆分/CRNAM`），
@@ -610,7 +429,10 @@ SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js r
 
 ---
 
-## 9. 相关专项技能
+---
+
+
+## 10. 相关技能
 
 | 技能 | 覆盖内容 |
 |---|---|
@@ -623,3 +445,5 @@ SAP_ENV_FILE=$PWD/env/dev.env SAP_CLIENT_OVERRIDE=300 node scripts/work/adt.js r
 | `sap-cua-gui-status-functions` | `gen_cua.js` 批量登记 GUI 状态 |
 | `sap-dump-to-excel-cell` | 从 short dump 反查 Excel 出错单元格 |
 | `sap-export-column-mapping` | 自建导出表头 ↔ 源码字段映射 |
+
+---

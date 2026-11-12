@@ -1,6 +1,6 @@
 # ABAP 作业技能包
 
-这 11 个技能是**一个人跑完整套 SAP ERP 实施项目后沉淀下来的操作手册**，配上仓库里的 MCP（`mcp-abap-adt`）与作业脚本（`scripts/`），可以覆盖「连上系统 → 改对象 → 推源码 → 跑测试 → 出报告」的完整闭环。
+这 10 个技能是**一个人跑完整套 SAP ERP 实施项目后沉淀下来的操作手册**，配上仓库里的 MCP（`mcp-abap-adt`）与作业脚本（`scripts/`），可以覆盖「连上系统 → 改对象 → 推源码 → 跑测试 → 出报告」的完整闭环。
 
 面向的是**真实项目里会遇到的坑**，不是官方文档的复述。每条结论都注明来源（哪个程序、哪个事务、什么时候踩的），可以直接拿去用而不是再猜一遍。
 
@@ -18,7 +18,6 @@ cp -r skills/sap-* ~/.workbuddy/skills/
 | 技能 | 什么时候用 | 体量 |
 |---|---|---|
 | [sap-abap-bapi-usage](sap-abap-bapi-usage/SKILL.md) | ★ **调 BAPI 之前看这个**。BAPI **索引**：一个 BAPI 一个文件（15 个接口册 + 3 个通用册 + 新增模板），SKILL.md 只有三张查找表——按 BAPI 名 / 按任务 / 按症状 | 132 行 + 18 分册 |
-| [sap-abap-project-ops](sap-abap-project-ops/SKILL.md) | ★ **新项目先看这个**。项目作业总纲**模板**：环境与集团切换、速查命令、ADT 写入六铁律、项目硬性约定、出入向接口范式、封装接口调用口径、高频坑索引、对象清单骨架 | 625 行 |
 | [sap-abap-pitfalls](sap-abap-pitfalls/SKILL.md) | ★ **报错先查这个**。约 120 条「现象 → 根因 → 解法」+ 症状速查表 + 开工五阶段 checklist；BAPI 类的坑不在此处（见上一行） | 283 + 569 行 |
 | [sap-abap-prog-push-run](sap-abap-prog-push-run/SKILL.md) | 报表侧全流程：推送、激活、无头运行、500 根因定位、ALV 按钮与 GUI 状态、文本元素、批导程序双按钮状态机、E2E 探针纪律、测试报告骨架 | 1201 行 |
 | [sap-export-column-mapping](sap-export-column-mapping/SKILL.md) | 客户给的导出列 ↔ 源码字段对不上时，用「数据对撞法」定位 | 705 行 |
@@ -83,9 +82,20 @@ cp _模板.md bapi-goodsmvt-create.md
 |---|---|
 | BAPI / 标准函数的**通用规则** | `sap-abap-bapi-usage/references/_*.md` |
 | 某个 **BAPI 的用法与坑** | `sap-abap-bapi-usage/references/bapi-*.md` |
-| **项目封装接口**的签名与调用口径 | `sap-abap-project-ops` §4 |
 | **非 BAPI** 类的坑（语法、激活、ALV、DDIC） | `sap-abap-pitfalls` |
 | 报表的**推送 / 运行 / 诊断 / 测试** | `sap-abap-prog-push-run` |
+| ADT 写入铁律、脚本用法 | 仓库 `docs/02`、`docs/04` |
+| **项目私有**：环境、请求号、命名规范、对象清单、封装接口签名 | 各项目自己的总纲，**不进本仓库技能**；写法参照 [`examples/project-ops-template.md`](../examples/project-ops-template.md) |
+
+## 什么内容不进技能库
+
+技能库只收「**换个项目照样成立**」的东西。判断三条：
+
+1. **是不是一次性任务** —— 是，就归位到对应技能或文档，不单独建技能；
+2. **是不是只对某个项目成立** —— 是，就只放项目自己的总纲；
+3. **去掉会不会丢知识** —— 三条都不满足才独立成一个技能。
+
+据此清掉过的两个技能：`sap-bdc-to-bapi-migration`（一次性任务，内容并入 bapi-usage 与 prog-push-run）、`sap-abap-project-ops`（项目私有，降级为 `examples/` 示例档案）。
 
 ## 已做的脱敏与泛化
 
@@ -102,4 +112,4 @@ cp _模板.md bapi-goodsmvt-create.md
 | 本地路径 | 实际工作区 | `~/ABAP-AI` |
 | 程序 / 对象名 | 客户命名空间对象 | 保留（去掉后「参照实现」类引用会失去落点） |
 
-`sap-abap-project-ops` 原为某项目的完整档案，发布版重写为**模板**：标题、描述、开头都声明了占位符，结构、判据、硬约定保持原样，套到新项目时把 `示例客户 / DEV / 100 / 300 / devuser` 换成实际值即可。
+客户专属的**封装接口签名表**（甲方业务逻辑）已从公开版本移除，只保留在作者本机。

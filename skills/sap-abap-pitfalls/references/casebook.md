@@ -535,7 +535,7 @@ ENDIF.
 
 **J3. 批量补丁必须带生成后自检断言**
 锚点命中数校验防不住「值错」：模板 `'%s'` 只喂流水号，四个文件的 `funcname` 全落成 `'003'`。断言关键值（funcname 全名恰好 1 处、禁用词计数为 0），不过即非零退出、不写盘。
-出处：sap-abap-project-ops §7
+出处：项目侧交付脚本约定（见仓库 `examples/project-ops-template.md` §8）
 
 **J4. Edit/生成器混入零宽字符**
 `ls_vbap_db-vgb` + U+200B + `el` 被写进源码，`grep`/`diff` 都正常，编译期才炸。写含中文的 ABAP 后跑隐藏字符体检（`LC_ALL=C grep -n '[^ -~]'` 快筛，或 python 判 `ord>127` 且不在 CJK/全角区间）；修法用 python `re.sub` 精确替换。

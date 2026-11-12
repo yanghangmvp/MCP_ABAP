@@ -1,7 +1,7 @@
 # `BAPI_ACC_DOCUMENT_POST` · 会计凭证过账
 
 **用途**：过账一张或多张会计凭证。**模拟用 `BAPI_ACC_DOCUMENT_CHECK`**（同参数、不落库）。
-**先决**：项目有封装接口（`ZFM_FII*` 一类）时优先用封装接口，它们内部自己 `COMMIT`/`ROLLBACK`，调用方不要再提交或回滚。见 `sap-abap-project-ops` §4。
+**先决**：项目有封装接口（`ZFM_FII*` 一类）时优先用封装接口，它们内部自己 `COMMIT`/`ROLLBACK`，调用方不要再提交或回滚。签名与拆分规则属项目私有，见你自己项目的作业总纲（写法参照仓库 `examples/project-ops-template.md`）。
 **同域**：冲销 `bapi-acc-document-rev-post.md` · 改已过账 `fi-document-change.md` · 票据类 `posting-interface-fb01.md`
 
 ---

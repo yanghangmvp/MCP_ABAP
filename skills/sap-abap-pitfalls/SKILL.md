@@ -6,7 +6,7 @@ agent_created: true
 
 # ABAP 开发踩坑与解法库
 
-用途：**下个项目开工前通读一遍，排障时按症状查**。本技能只收「跨项目可复用」的经验，环境地址、请求号、对象清单见项目侧总纲（如 `sap-abap-project-ops`）。
+用途：**下个项目开工前通读一遍，排障时按症状查**。本技能只收「跨项目可复用」的经验，环境地址、请求号、对象清单属项目私有，不在此处（怎么写一份见仓库 `examples/project-ops-template.md`）。
 完整 120 条（含代码片段与出处）见 `references/casebook.md`。
 **BAPI / 标准函数调用**的坑不在此文件，统一见技能 `sap-abap-bapi-usage`。
 
@@ -272,7 +272,6 @@ agent_created: true
 | 技能 | 何时转过去 |
 |---|---|
 | `sap-abap-bapi-usage` | ★ **BAPI 索引**：一个 BAPI 一个文件，索引表按名 / 按任务 / 按症状三路查 |
-| `sap-abap-project-ops` | 需要 DEV 项目侧的环境/集团/请求号/对象清单/命令速查 |
 | `sap-abap-prog-push-run` | 报表程序的推送、激活、运行、测试报告模板 |
 | `sap-ddic-object-ops` | 域/数据元素/表/结构的建与改操作步骤 |
 | `sap-json-interface-mapping` | `name_mappings` 细节、三形态探针 |

@@ -10,7 +10,7 @@ agent_created: true
 
 > 本技能负责**报表侧**：推送、激活、运行、诊断、测试报告。
 > **BAPI / 标准函数调用**（参数结构、静默失效、按域选型、语言、对账）见 `sap-abap-bapi-usage`；
-> 项目封装接口（`ZFM_FII001`/`FII003`/`FII001_SPLIT`）见 `sap-abap-project-ops` §4。
+> 项目封装接口（`ZFM_FII001`/`FII003`/`FII001_SPLIT`）的签名属项目私有，见你自己项目的作业总纲（写法参照仓库 `examples/project-ops-template.md`）。
 
 ## 0. 集团切换（最容易踩）
 
@@ -1142,7 +1142,7 @@ SORT lt_jest BY objnr.
 
 ## 11. 会计凭证过账 / 冲销：走项目封装接口，不要直接调 BAPI
 
-选型结论与理由见 `sap-abap-bapi-usage` → `references/bapi-acc-document-post.md`；本项目封装接口（`ZFM_FII001` / `ZFM_FII001_SPLIT` / `ZFM_FII003`）的完整签名、模拟导入、拆分规则、消息处理见 `sap-abap-project-ops` §4 接口范式。
+选型结论与理由见 `sap-abap-bapi-usage` → `references/bapi-acc-document-post.md`；本项目封装接口（`ZFM_FII001` / `ZFM_FII001_SPLIT` / `ZFM_FII003`）的签名、模拟导入、拆分规则、消息处理属项目私有，不入公开仓库。
 
 ## 12. 激活报错速查（都是实测踩出来的）
 
